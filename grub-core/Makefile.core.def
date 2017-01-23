@@ -49,20 +49,20 @@ kernel = {
 
   nostrip = emu;
 
-  emu_ldflags              = '-Wl,-r,-d';
-  i386_efi_ldflags         = '-Wl,-r,-d';
+  emu_ldflags              = '$(TARGET_INCREMENTAL_LINK)';
+  i386_efi_ldflags         = '$(TARGET_INCREMENTAL_LINK)';
   i386_efi_stripflags      = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version';
-  x86_64_efi_ldflags       = '-Wl,-r,-d';
+  x86_64_efi_ldflags       = '$(TARGET_INCREMENTAL_LINK)';
   x86_64_efi_stripflags    = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version';
 
   ia64_efi_cflags = '-fno-builtin -fpic -minline-int-divide-max-throughput';
-  ia64_efi_ldflags = '-Wl,-r,-d';
+  ia64_efi_ldflags = '$(TARGET_INCREMENTAL_LINK)';
   ia64_efi_stripflags = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version';
 
-  arm_efi_ldflags          = '-Wl,-r,-d';
+  arm_efi_ldflags          = '$(TARGET_INCREMENTAL_LINK)';
   arm_efi_stripflags       = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version';
 
-  arm64_efi_ldflags          = '-Wl,-r,-d';
+  arm64_efi_ldflags          = '$(TARGET_INCREMENTAL_LINK)';
   arm64_efi_stripflags       = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version -R .eh_frame';
 
   i386_pc_ldflags          = '$(TARGET_IMG_LDFLAGS)';
@@ -90,7 +90,7 @@ kernel = {
   i386_qemu_cppflags     = '-DGRUB_BOOT_MACHINE_LINK_ADDR=$(GRUB_BOOT_MACHINE_LINK_ADDR)';
   emu_cflags = '$(CFLAGS_GNULIB)';
   emu_cppflags = '$(CPPFLAGS_GNULIB)';
-  arm_uboot_ldflags       = '-Wl,-r,-d';
+  arm_uboot_ldflags       = '$(TARGET_INCREMENTAL_LINK)';
   arm_uboot_stripflags    = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version';
 
   i386_pc_startup = kern/i386/pc/startup.S;

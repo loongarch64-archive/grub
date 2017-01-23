@@ -900,6 +900,25 @@ if test x"$target_cpu" = xsparc64 ; then
   TARGET_LDFLAGS="$TARGET_LDFLAGS $grub_cv_target_cc_mno_relax"
 fi
 
+AC_CACHE_CHECK([for incremental link options], grub_cv_target_cc_incremental_link, [
+  grub_cv_target_cc_incremental_link=no
+  for cand in "-Wl,-r,-d" "-static -Wl,-r,-d"; do
+    #AC_LINK_IFELSE doesn't handle non-executable output correctly
+    echo > conftest_inclink.c
+    if $TARGET_CC -o /dev/null $TARGET_CFLAGS $TARGET_CPPFLAGS $TARGET_LDFLAGS -nostdlib -Werror $cand conftest_inclink.c >&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD; then
+      grub_cv_target_cc_incremental_link="$cand"
+      break
+    fi
+  done
+])
+
+if test x"$grub_cv_target_cc_incremental_link" = xno ; then
+  AC_MSG_ERROR([could not find incremental link options])
+fi
+
+TARGET_INCREMENTAL_LINK="$grub_cv_target_cc_incremental_link"
+AC_SUBST(TARGET_INCREMENTAL_LINK)
+
 # By default, GCC 4.4 generates .eh_frame sections containing unwind
 # information in some cases where it previously did not. GRUB doesn't need
 # these and they just use up vital space. Restore the old compiler
