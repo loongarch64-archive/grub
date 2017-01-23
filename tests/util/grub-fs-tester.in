@@ -1,4 +1,4 @@
-#!@BUILD_SHEBANG
+#!@BUILD_SHEBANG@
 
 set -e
 
@@ -410,8 +410,8 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 		    ;;
 		x"vfat16" | xmsdos16)
 		    BIGBLOCKCNT=$((25000 * BLKSIZE))
-		    if [ $BIGBLOCKCNT -gt $((16#ffffffff)) ]; then
-			BIGBLOCKCNT=$((16#ffffffff))
+		    if [ $BIGBLOCKCNT -gt 4294967295 ]; then
+			BIGBLOCKCNT=4294967295
 		    fi
 		    ;;
 		x"minix")
@@ -432,7 +432,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 		    BIGBLOCKCNT=$((4000 * 1048576));;
 		    # FS LIMITATION: These FS have uint32 as file size field
 		x"vfat"* | xmsdos* | x"cpio_crc" | x"cpio_newc" | x"cpio_bin" | x"cpio_hpbin" | xsfs*)
-		    BIGBLOCKCNT=$((16#ffffffff));;
+		    BIGBLOCKCNT=4294967295;;
 		    # FS LIMITATION: These FS have int32 as file size field
 		    # FIXME: not so sure about AFFS
 		    # OS LIMITATION: minix2/minix3 could be formatted in a way to permit more.
@@ -996,7 +996,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 		x"tarfs")
 		    (cd "$MASTER"; tar cf "${FSIMAGEP}0.img" .) ;;
 		x"cpio_"*)
-		    (cd "$MASTER"; find . | cpio -o -H "${fs/cpio_/}" > "${FSIMAGEP}0.img" ) ;;
+		    (cd "$MASTER"; find . | cpio -o -H "$(echo ${fs} | sed 's@^cpio_@@')" > "${FSIMAGEP}0.img" ) ;;
 		x"ziso9660")
 		    FSUUID=$(date -u +%Y-%m-%d-%H-%M-%S-00);
 		    xorriso -compliance rec_mtime -set_filter_r --zisofs -- -zisofs default -as mkisofs -iso-level 3 -graft-points -R -J -joliet-long -V "$FSLABEL" --modification-date=$(echo ${FSUUID} | sed 's/-//g;') -o "${FSIMAGEP}0.img"  -- -set_filter_r --zisofs -- -zisofs default -add /="$MASTER" ;;
@@ -1111,7 +1111,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 	    else
 		echo LIST FAIL
 		echo "$LSROUT"
-		TZ=UTC ls --time-style=+%Y%m%d%H%M%S.%N -l "$MNTPOINTRO"
+		TZ=UTC ls -l "$MNTPOINTRO"
 		exit 1
 	    fi
 
@@ -1120,7 +1120,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 	    else
 		echo NLIST FAIL
 		echo "$LSROUT"
-		TZ=UTC ls --time-style=+%Y%m%d%H%M%S.%N -lA "$MNTPOINTRO"
+		TZ=UTC ls -lA "$MNTPOINTRO"
 		exit 1
 	    fi
 
@@ -1129,7 +1129,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 	    else
 		echo ILIST FAIL
 		echo "$LSROUT"
-		TZ=UTC ls --time-style=+%Y%m%d%H%M%S.%N -l "$MNTPOINTRO"
+		TZ=UTC ls -l "$MNTPOINTRO"
 		exit 1
 	    fi
 
@@ -1138,7 +1138,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 	    else
 		echo LONG LIST FAIL
 		echo "$LSROUT"
-		TZ=UTC ls --time-style=+%Y%m%d%H%M%S.%N -l "$MNTPOINTRO"
+		TZ=UTC ls -l "$MNTPOINTRO"
 		exit 1
 	    fi
 
@@ -1149,7 +1149,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 		else
 		    echo TIME FAIL
 		    echo "$LSROUT"
-		    TZ=UTC ls --time-style=+%Y%m%d%H%M%S.%N -l "$MNTPOINTRO"
+		    TZ=UTC ls -l "$MNTPOINTRO"
 		    exit 1
 		fi
 
@@ -1159,7 +1159,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 		else
 		    echo LONG TIME FAIL
 		    echo "$LSROUT"
-		    TZ=UTC ls --time-style=+%Y%m%d%H%M%S.%N -l "$MNTPOINTRO"
+		    TZ=UTC ls -l "$MNTPOINTRO"
 		    exit 1
 		fi
 	    fi
@@ -1175,7 +1175,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 	    else
 		echo DOT IN ROOTDIR FAIL
 		echo "$LSROUT"
-		TZ=UTC ls --time-style=+%Y%m%d%H%M%S.%N -l "$MNTPOINTRO"
+		TZ=UTC ls -l "$MNTPOINTRO"
 		exit 1
 	    fi
 
@@ -1189,7 +1189,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 		    else
 			echo DOTDOT IN ROOTDIR FAIL
 			echo "$LSROUT"
-			TZ=UTC ls --time-style=+%Y%m%d%H%M%S.%N -l "$MNTPOINTRO"
+			TZ=UTC ls -l "$MNTPOINTRO"
 			exit 1
 		    fi
 		    ;;
@@ -1206,7 +1206,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 	    else
 		echo SLIST FAIL
 		echo "$LSROUT"
-		TZ=UTC ls --time-style=+%Y%m%d%H%M%S.%N -l "$MNTPOINTRO/sdir"
+		TZ=UTC ls -l "$MNTPOINTRO/sdir"
 		exit 1
 	    fi
 
@@ -1221,7 +1221,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 	    else
 		echo PLIST FAIL
 		echo "$LSROUT"
-		TZ=UTC ls --time-style=+%Y%m%d%H%M%S.%N -l "$MNTPOINTRO/$PDIR"
+		TZ=UTC ls -l "$MNTPOINTRO/$PDIR"
 		exit 1
 	    fi
 
@@ -1236,7 +1236,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 	    else
 		echo DOT IN SUBDIR FAIL
 		echo "$LSROUT"
-		TZ=UTC ls --time-style=+%Y%m%d%H%M%S.%N -l "$MNTPOINTRO/$OSDIR/sdir"
+		TZ=UTC ls -l "$MNTPOINTRO/$OSDIR/sdir"
 		exit 1
 	    fi
 
@@ -1251,7 +1251,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 	    else
 		echo DOTDOT IN SUBDIR FAIL
 		echo "$LSROUT"
-		TZ=UTC ls --time-style=+%Y%m%d%H%M%S.%N -l "$MNTPOINTRO/$OSDIR/ssdir"
+		TZ=UTC ls -l "$MNTPOINTRO/$OSDIR/ssdir"
 		exit 1
 	    fi
 
