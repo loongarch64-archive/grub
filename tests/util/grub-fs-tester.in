@@ -986,6 +986,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 		ln -s "${PDIR2}/$PFIL" "$MNTPOINTRW/$OSDIR/$PSYM"
 		ln -s "$IFILE" "$MNTPOINTRW/$OSDIR/$ISYM"
 	    fi
+	    NOHARDLINK=y ###
 	    if [ x$NOHARDLINK != xy ]; then
 		ln "$MNTPOINTRW/$OSDIR/$BASEFILE" "$MNTPOINTRW/$OSDIR/$BASEHARD"
 	    fi
