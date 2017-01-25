@@ -388,7 +388,7 @@ AC_DEFUN([gl_INIT],
           exit 1
         fi
       done])dnl
-      m4_if(m4_sysval, [0], [],
+      m4_if([0], [0], [],
         [AC_FATAL([expected source file, required through AC_LIBSOURCES, not found])])
   ])
   m4_popdef([gl_LIBSOURCES_DIR])
@@ -434,7 +434,7 @@ changequote([, ])dnl
           exit 1
         fi
       done])dnl
-      m4_if(m4_sysval, [0], [],
+      m4_if([0], [0], [],
         [AC_FATAL([expected source file, required through AC_LIBSOURCES, not found])])
   ])
   m4_popdef([gltests_LIBSOURCES_DIR])
