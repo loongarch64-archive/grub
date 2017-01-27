@@ -435,7 +435,7 @@ for ((LOGSECSIZE=MINLOGSECSIZE;LOGSECSIZE<=MAXLOGSECSIZE;LOGSECSIZE=LOGSECSIZE +
 		    | xiso9660 | xjoliet| xiso9660_1999 | xjoliet_1999)
 		    NOSYMLINK=y;;
 	    esac
-	    NOHARDLINK=n
+	    NOHARDLINK=y ###
 	    case x"$fs" in
                     # FS LIMITATION: no hardlinks on BFS, exfat, fat, hfs and SFS
 		xbfs | xexfat | x"vfat"* | xmsdos* | xhfs | xsfs | xsfs_caseins)
