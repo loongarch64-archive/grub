@@ -373,7 +373,10 @@ case "$host_os" in
      ;;
   *)
      AC_CHECK_SIZEOF(off_t)
-     test x"$ac_cv_sizeof_off_t" = x8 || AC_MSG_ERROR([Large file support is required]);;
+     if test x"$ac_cv_sizeof_off_t" != x8 ; then
+       AC_CHECK_SIZEOF(off64_t)
+       test x"$ac_cv_sizeof_off64_t" = x8 || AC_MSG_ERROR([Large file support is required])
+     fi;;
 esac
 
 if test x$USE_NLS = xno; then
@@ -455,6 +458,16 @@ case "$build_os" in
   *)					BUILD_EXEEXT= ;;
 esac
 AC_SUBST(BUILD_EXEEXT)
+
+# In some build environments like termux /bin/sh is not a valid
+# shebang. Use $SHELL instead if it's executable and /bin/sh isn't
+BUILD_SHEBANG=/bin/sh
+for she in /bin/sh "$SHELL"; do
+  if test -x "$she" ; then
+    BUILD_SHEBANG="$she"
+  fi
+done
+AC_SUBST(BUILD_SHEBANG)
 
 # For gnulib.
 gl_INIT
@@ -889,6 +902,25 @@ if test x"$target_cpu" = xsparc64 ; then
   fi
   TARGET_LDFLAGS="$TARGET_LDFLAGS $grub_cv_target_cc_mno_relax"
 fi
+
+AC_CACHE_CHECK([for incremental link options], grub_cv_target_cc_incremental_link, [
+  grub_cv_target_cc_incremental_link=no
+  for cand in "-Wl,-r,-d" "-static -Wl,-r,-d"; do
+    #AC_LINK_IFELSE doesn't handle non-executable output correctly
+    echo > conftest_inclink.c
+    if $TARGET_CC -o /dev/null $TARGET_CFLAGS $TARGET_CPPFLAGS $TARGET_LDFLAGS -nostdlib -Werror $cand conftest_inclink.c >&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD; then
+      grub_cv_target_cc_incremental_link="$cand"
+      break
+    fi
+  done
+])
+
+if test x"$grub_cv_target_cc_incremental_link" = xno ; then
+  AC_MSG_ERROR([could not find incremental link options])
+fi
+
+TARGET_INCREMENTAL_LINK="$grub_cv_target_cc_incremental_link"
+AC_SUBST(TARGET_INCREMENTAL_LINK)
 
 # By default, GCC 4.4 generates .eh_frame sections containing unwind
 # information in some cases where it previously did not. GRUB doesn't need

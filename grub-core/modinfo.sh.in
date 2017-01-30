@@ -1,4 +1,4 @@
-#!/bin/sh
+#!@BUILD_SHEBANG@
 
 # User-controllable options
 grub_modinfo_target_cpu=@target_cpu@
@@ -19,6 +19,7 @@ grub_target_cflags='@TARGET_CFLAGS@'
 grub_target_cppflags='@TARGET_CPPFLAGS@'
 grub_target_ccasflags='@TARGET_CCASFLAGS@'
 grub_target_ldflags='@TARGET_LDFLAGS@'
+grub_target_incremental_ldflags='@TARGET_INCREMENTAL_LINK@'
 grub_cflags='@CFLAGS@'
 grub_cppflags='@CPPFLAGS@'
 grub_ccasflags='@CCASFLAGS@'
