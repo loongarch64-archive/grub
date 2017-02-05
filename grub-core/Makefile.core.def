@@ -900,6 +900,11 @@ module = {
 };
 
 module = {
+  name = verify_helper;
+  common = commands/verify_helper.c;
+};
+
+module = {
   name = hdparm;
   common = commands/hdparm.c;
   common = lib/hexdump.c;
