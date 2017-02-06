@@ -124,7 +124,7 @@ grub_verify_helper_open (grub_file_t io, enum grub_file_type type)
   if (err)
     goto fail;
 
-  err = ver->fini (context);
+  err = ver->fini ? ver->fini (context) : GRUB_ERR_NONE;
   if (err)
     goto fail;
 
@@ -142,7 +142,7 @@ grub_verify_helper_open (grub_file_t io, enum grub_file_type type)
       if (err)
 	goto fail;
 
-      err = ver->fini (context);
+      err = ver->fini ? ver->fini (context) : GRUB_ERR_NONE;
       if (err)
 	goto fail;
 
