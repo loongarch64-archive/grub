@@ -313,7 +313,9 @@ grub_cmd_multiboot (grub_command_t cmd __attribute__ ((unused)),
   grub_dl_ref (my_mod);
 
   /* Skip filename.  */
-  grub_multiboot_init_mbi (argc - 1, argv + 1);
+  err = grub_multiboot_init_mbi (argc - 1, argv + 1);
+  if (err)
+    goto fail;
 
   grub_relocator_unload (grub_multiboot_relocator);
   grub_multiboot_relocator = grub_relocator_new ();

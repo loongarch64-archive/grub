@@ -161,6 +161,20 @@ grub_verify_helper_open (grub_file_t io, enum grub_file_type type)
   return NULL;
 }
 
+grub_err_t
+grub_verify_string (char *str, enum grub_verify_string_type type)
+{
+  struct grub_file_verifier *ver;
+  FOR_LIST_ELEMENTS(ver, grub_file_verifiers)
+    {
+      grub_err_t err;
+      err = ver->verify_string ? ver->verify_string (str, type) : GRUB_ERR_NONE;
+      if (err)
+	return err;
+    }
+  return GRUB_ERR_NONE;
+}
+
 GRUB_MOD_INIT(verify_helper)
 {
   grub_file_filter_register (GRUB_FILE_FILTER_VERIFY, grub_verify_helper_open);

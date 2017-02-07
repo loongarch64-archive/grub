@@ -7,6 +7,12 @@ enum grub_verify_flags
     GRUB_VERIFY_FLAGS_SINGLE_CHUNK = 2,
   };
 
+enum grub_verify_string_type
+  {
+    GRUB_VERIFY_KERNEL_CMDLINE,
+    GRUB_VERIFY_MODULE_CMDLINE,
+  };
+
 struct grub_file_verifier
 {
   struct grub_file_verifier *next;
@@ -25,6 +31,8 @@ struct grub_file_verifier
   grub_err_t (*write) (void *context, void *buf, grub_size_t sz);
   grub_err_t (*fini) (void *context);
   void (*close) (void *context);
+
+  grub_err_t (*verify_string) (char *str, enum grub_verify_string_type type);
 };
 
 extern struct grub_file_verifier *grub_file_verifiers;
@@ -40,3 +48,6 @@ grub_verifier_unregister (struct grub_file_verifier *ver)
 {
   grub_list_remove (GRUB_AS_LIST (ver));
 }
+
+grub_err_t
+grub_verify_string (char *str, enum grub_verify_string_type type);
