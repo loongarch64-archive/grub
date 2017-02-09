@@ -32,6 +32,7 @@
 #include <grub/fbutil.h>
 #include <grub/types.h>
 #include <grub/video.h>
+#include <grub/misc.h>
 
 /* Generic filler that works for every supported mode.  */
 static void

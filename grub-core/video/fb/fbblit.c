@@ -34,38 +34,36 @@
 #include <grub/types.h>
 #include <grub/video.h>
 
-/* Generic replacing blitter (slow).  Works for every supported format.  */
-static void
-grub_video_fbblit_replace (struct grub_video_fbblit_info *dst,
-			   struct grub_video_fbblit_info *src,
-			   int x, int y, int width, int height,
-			   int offset_x, int offset_y)
+static inline grub_uint8_t
+alpha_dilute (grub_uint8_t bg, grub_uint8_t fg, grub_uint8_t alpha)
 {
-  int i;
-  int j;
-  grub_uint8_t src_red;
-  grub_uint8_t src_green;
-  grub_uint8_t src_blue;
-  grub_uint8_t src_alpha;
-  grub_video_color_t src_color;
-  grub_video_color_t dst_color;
-
-  for (j = 0; j < height; j++)
-    {
-      for (i = 0; i < width; i++)
-	{
-	  src_color = get_pixel (src, i + offset_x, j + offset_y);
-
-	  grub_video_fb_unmap_color_int (src, src_color, &src_red, &src_green,
-					 &src_blue, &src_alpha);
-
-	  dst_color = grub_video_fb_map_rgba (src_red, src_green,
-					      src_blue, src_alpha);
-
-	  set_pixel (dst, x + i, y + j, dst_color);
-	}
-    }
+  grub_uint16_t s;
+  grub_uint16_t h, l;
+  s = (fg * alpha) + (bg * (255 ^ alpha));
+  /* Optimised division by 255.  */
+  h = s >> 8;
+  l = s & 0xff;
+  if (h + l >= 255)
+    h++;
+  return h;
 }
+
+#define SUFFIX(x) x
+#define ADD_X 0
+#define ADD_Y 0
+#define TRANS_X(x, y) x
+#define TRANS_Y(x, y) y
+#include "fbblit_rot.c"
+
+#define SUFFIX(x) x ## _90
+#define TRANS_X(x, y) (y)
+#define TRANS_Y(x, y) (-(x))
+#include "fbblit_rot.c"
+
+#define SUFFIX(x) x ## _270
+#define TRANS_X(x, y) (-(y))
+#define TRANS_Y(x, y) (x)
+#include "fbblit_rot.c"
 
 /* Block copy replacing blitter.  Works with modes multiple of 8 bits.  */
 static void
@@ -1145,78 +1143,6 @@ grub_video_fbblit_replace_index_RGB888 (struct grub_video_fbblit_info *dst,
     }
 }
 
-static inline grub_uint8_t
-alpha_dilute (grub_uint8_t bg, grub_uint8_t fg, grub_uint8_t alpha)
-{
-  grub_uint16_t s;
-  grub_uint16_t h, l;
-  s = (fg * alpha) + (bg * (255 ^ alpha));
-  /* Optimised division by 255.  */
-  h = s >> 8;
-  l = s & 0xff;
-  if (h + l >= 255)
-    h++;
-  return h;
-}
-
-/* Generic blending blitter.  Works for every supported format.  */
-static void
-grub_video_fbblit_blend (struct grub_video_fbblit_info *dst,
-			 struct grub_video_fbblit_info *src,
-			 int x, int y, int width, int height,
-			 int offset_x, int offset_y)
-{
-  int i;
-  int j;
-
-  for (j = 0; j < height; j++)
-    {
-      for (i = 0; i < width; i++)
-        {
-          grub_uint8_t src_red;
-          grub_uint8_t src_green;
-          grub_uint8_t src_blue;
-          grub_uint8_t src_alpha;
-          grub_uint8_t dst_red;
-          grub_uint8_t dst_green;
-          grub_uint8_t dst_blue;
-          grub_uint8_t dst_alpha;
-          grub_video_color_t src_color;
-          grub_video_color_t dst_color;
-
-          src_color = get_pixel (src, i + offset_x, j + offset_y);
-          grub_video_fb_unmap_color_int (src, src_color, &src_red, &src_green,
-					 &src_blue, &src_alpha);
-
-          if (src_alpha == 0)
-            continue;
-
-          if (src_alpha == 255)
-            {
-              dst_color = grub_video_fb_map_rgba (src_red, src_green,
-						  src_blue, src_alpha);
-              set_pixel (dst, x + i, y + j, dst_color);
-              continue;
-            }
-
-          dst_color = get_pixel (dst, x + i, y + j);
-
-          grub_video_fb_unmap_color_int (dst, dst_color, &dst_red,
-					 &dst_green, &dst_blue, &dst_alpha);
-
-          dst_red = alpha_dilute (dst_red, src_red, src_alpha);
-          dst_green = alpha_dilute (dst_green, src_green, src_alpha);
-          dst_blue = alpha_dilute (dst_blue, src_blue, src_alpha);
-
-          dst_alpha = src_alpha;
-          dst_color = grub_video_fb_map_rgba (dst_red, dst_green, dst_blue,
-					      dst_alpha);
-
-          set_pixel (dst, x + i, y + j, dst_color);
-        }
-    }
-}
-
 /* Optimized blending blitter for RGBA8888 to BGRA8888.  */
 static void
 grub_video_fbblit_blend_BGRA8888_RGBA8888 (struct grub_video_fbblit_info *dst,
@@ -1936,6 +1862,45 @@ grub_video_fb_dispatch_blit (struct grub_video_fbblit_info *target,
 			     unsigned int width, unsigned int height,
 			     int offset_x, int offset_y)
 {
+  if (target->mode_info->rotation == GRUB_VIDEO_ROTATE_90)
+    {
+      int nx = y;
+      int ny = target->mode_info->width - x;
+      if (oper == GRUB_VIDEO_BLIT_REPLACE)
+	{
+	  /* No optimized replace operator found, use default (slow) blitter.  */
+	  grub_video_fbblit_replace_90 (target, source, nx, ny, width, height,
+					offset_x, offset_y);
+	  return;
+	}
+      else
+	{
+	  /* No optimized replace operator found, use default (slow) blitter.  */
+	  grub_video_fbblit_blend_90 (target, source, nx, ny, width, height,
+				      offset_x, offset_y);
+	  return;
+	}
+    }
+  if (target->mode_info->rotation == GRUB_VIDEO_ROTATE_270)
+    {
+      int nx = target->mode_info->height - y;
+      int ny = x;
+      if (oper == GRUB_VIDEO_BLIT_REPLACE)
+	{
+	  /* No optimized replace operator found, use default (slow) blitter.  */
+	  grub_video_fbblit_replace_270 (target, source, nx, ny, width, height,
+					 offset_x, offset_y);
+	  return;
+	}
+      else
+	{
+	  /* No optimized replace operator found, use default (slow) blitter.  */
+	  grub_video_fbblit_blend_270 (target, source, nx, ny, width, height,
+				       offset_x, offset_y);
+	  return;
+	}
+    }
+
   if (oper == GRUB_VIDEO_BLIT_REPLACE)
     {
       /* Try to figure out more optimized version for replace operator.  */

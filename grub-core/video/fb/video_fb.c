@@ -830,7 +830,7 @@ grub_video_fb_unmap_color_int (struct grub_video_fbblit_info * source,
 }
 
 static void
-dirty (int y, int height)
+dirty_untrans (int y, int height)
 {
   if (framebuffer.render_target != framebuffer.back_target)
     return;
@@ -838,6 +838,66 @@ dirty (int y, int height)
     framebuffer.current_dirty.first_line = y;
   if (framebuffer.current_dirty.last_line < y + height)
     framebuffer.current_dirty.last_line = y + height;
+}
+
+static void
+dirty (int x, int width, int y, int height)
+{
+  if (framebuffer.render_target != framebuffer.back_target)
+    return;
+  if (framebuffer.render_target->mode_info.rotation == GRUB_VIDEO_ROTATE_90
+      || framebuffer.render_target->mode_info.rotation == GRUB_VIDEO_ROTATE_270)
+    {
+      if (framebuffer.current_dirty.first_line > x)
+	framebuffer.current_dirty.first_line = x;
+      if (framebuffer.current_dirty.last_line < x + width)
+	framebuffer.current_dirty.last_line = x + width;
+    }
+  else
+    {
+      if (framebuffer.current_dirty.first_line > y)
+	framebuffer.current_dirty.first_line = y;
+      if (framebuffer.current_dirty.last_line < y + height)
+	framebuffer.current_dirty.last_line = y + height;
+    }
+}
+
+static void
+grub_video_fb_fill_rect_untrans (grub_video_color_t color, int x, int y,
+				 unsigned int width, unsigned int height)
+{
+  struct grub_video_fbblit_info target;
+
+  target.mode_info = &framebuffer.render_target->mode_info;
+  target.data = framebuffer.render_target->data;
+
+  grub_video_fb_fill_dispatch (&target, color, x, y,
+			       width, height);
+  dirty_untrans (y, height);
+}
+
+static grub_video_rect_t
+grub_video_transform_rectangle (grub_video_rect_t r, const struct grub_video_mode_info *mode_info)
+{
+  grub_video_rect_t n;
+  switch (mode_info->rotation)
+    {
+    case GRUB_VIDEO_ROTATE_NONE:
+      return r;
+    case GRUB_VIDEO_ROTATE_90:
+      n.width = r.height;
+      n.height = r.width;
+      n.x = r.y;
+      n.y = mode_info->width - r.x - r.width;
+      return n;
+    case GRUB_VIDEO_ROTATE_270:
+      n.width = r.height;
+      n.height = r.width;
+      n.x = mode_info->height - r.y - r.height;
+      n.y = r.x;
+      return n;
+    }
+  return r;
 }
 
 grub_err_t
@@ -895,14 +955,22 @@ grub_video_fb_fill_rect (grub_video_color_t color, int x, int y,
   x += area_x;
   y += area_y;
 
-  dirty (y, height);
+  dirty (x, width, y, height);
 
   /* Use fbblit_info to encapsulate rendering.  */
   target.mode_info = &framebuffer.render_target->mode_info;
   target.data = framebuffer.render_target->data;
 
-  grub_video_fb_fill_dispatch (&target, color, x, y,
-			       width, height);
+  grub_video_rect_t orig = {
+    .x = x,
+    .y = y,
+    .width = width,
+    .height = height
+  };
+  grub_video_rect_t tran = grub_video_transform_rectangle (orig, &framebuffer.render_target->mode_info);
+
+  grub_video_fb_fill_dispatch (&target, color, tran.x, tran.y,
+			       tran.width, tran.height);
   return GRUB_ERR_NONE;
 }
 
@@ -1008,7 +1076,7 @@ grub_video_fb_blit_source (struct grub_video_fbblit_info *source,
   target.data = framebuffer.render_target->data;
 
   /* Do actual blitting.  */
-  dirty (y, height);
+  dirty (x, width, y, height);
   grub_video_fb_dispatch_blit (&target, source, oper, x, y, width, height,
                                offset_x, offset_y);
 
@@ -1052,42 +1120,70 @@ grub_video_fb_scroll (grub_video_color_t color, int dx, int dy)
   int src_y;
   int dst_x;
   int dst_y;
+  grub_video_rect_t transformed_viewport;
 
   /* 1. Check if we have something to do.  */
   if ((dx == 0) && (dy == 0))
     return GRUB_ERR_NONE;
 
-  width = framebuffer.render_target->viewport.width - grub_abs (dx);
-  height = framebuffer.render_target->viewport.height - grub_abs (dy);
+  transformed_viewport = grub_video_transform_rectangle (framebuffer.render_target->viewport,
+							 &framebuffer.render_target->mode_info);
 
-  dirty (framebuffer.render_target->viewport.y,
-	 framebuffer.render_target->viewport.height);
+  dirty (transformed_viewport.x,
+	 transformed_viewport.width,
+	 transformed_viewport.y,
+	 transformed_viewport.height);
+
+  switch (framebuffer.render_target->mode_info.rotation)
+    {
+    case GRUB_VIDEO_ROTATE_NONE:
+      break;
+    case GRUB_VIDEO_ROTATE_90:
+      {
+	int ndx = dy;
+	int ndy = -dx;
+	dx = ndx;
+	dy = ndy;
+      }
+      break;
+    case GRUB_VIDEO_ROTATE_270:
+      {
+	int ndx = -dy;
+	int ndy = dx;
+	dx = ndx;
+	dy = ndy;
+      }
+      break;
+    }
+
+  width = transformed_viewport.width - grub_abs (dx);
+  height = transformed_viewport.height - grub_abs (dy);
 
   if (dx < 0)
     {
-      src_x = framebuffer.render_target->viewport.x - dx;
-      dst_x = framebuffer.render_target->viewport.x;
+      src_x = transformed_viewport.x - dx;
+      dst_x = transformed_viewport.x;
     }
   else
     {
-      src_x = framebuffer.render_target->viewport.x;
-      dst_x = framebuffer.render_target->viewport.x + dx;
+      src_x = transformed_viewport.x;
+      dst_x = transformed_viewport.x + dx;
     }
 
   if (dy < 0)
     {
-      src_y = framebuffer.render_target->viewport.y - dy;
-      dst_y = framebuffer.render_target->viewport.y;
+      src_y = transformed_viewport.y - dy;
+      dst_y = transformed_viewport.y;
     }
   else
     {
-      src_y = framebuffer.render_target->viewport.y;
-      dst_y = framebuffer.render_target->viewport.y + dy;
+      src_y = transformed_viewport.y;
+      dst_y = transformed_viewport.y + dy;
     }
 
   /* 2. Check if there is need to copy data.  */
-  if ((grub_abs (dx) < framebuffer.render_target->viewport.width)
-       && (grub_abs (dy) < framebuffer.render_target->viewport.height))
+  if ((grub_abs (dx) < transformed_viewport.width)
+       && (grub_abs (dy) < transformed_viewport.height))
     {
       /* 3. Move data in render target.  */
       struct grub_video_fbblit_info target;
@@ -1109,7 +1205,7 @@ grub_video_fb_scroll (grub_video_color_t color, int dx, int dy)
 	  src = (void *) grub_video_fb_get_video_ptr (&target,	     \
 						      src_x, src_y); \
 	  /* 3a. Move data upwards.  */                              \
-	  for (j = 0; j < height; j++)                               \
+	  for (j = 0; j < height; j++)                            \
 	    {                                                        \
 	      for (i = 0; i < linelen; i++)                          \
 		*(dst++) = *(src++);	                             \
@@ -1128,7 +1224,7 @@ grub_video_fb_scroll (grub_video_color_t color, int dx, int dy)
 					     src_y + height - 1);    \
 	  dst--;                                                     \
           src--;                                                     \
-	  for (j = 0; j < height; j++)                               \
+	  for (j = 0; j < height; j++)                            \
 	    {                                                        \
 	      for (i = 0; i < linelen; i++)                          \
 		*(dst--) = *(src--);                                 \
@@ -1178,27 +1274,27 @@ grub_video_fb_scroll (grub_video_color_t color, int dx, int dy)
 
   /* 4a. Fill top & bottom parts.  */
   if (dy > 0)
-    grub_video_fb_fill_rect (color, 0, 0, framebuffer.render_target->viewport.width, dy);
+    grub_video_fb_fill_rect_untrans (color, 0, 0, transformed_viewport.width, dy);
   else if (dy < 0)
     {
-      if (framebuffer.render_target->viewport.height < grub_abs (dy))
-        dy = -framebuffer.render_target->viewport.height;
+      if (transformed_viewport.height < grub_abs (dy))
+        dy = -transformed_viewport.height;
 
-      grub_video_fb_fill_rect (color, 0, framebuffer.render_target->viewport.height + dy,
-                                framebuffer.render_target->viewport.width, -dy);
+      grub_video_fb_fill_rect_untrans (color, 0, transformed_viewport.height + dy,
+				       transformed_viewport.width, -dy);
     }
 
   /* 4b. Fill left & right parts.  */
   if (dx > 0)
-    grub_video_fb_fill_rect (color, 0, 0,
-                              dx, framebuffer.render_target->viewport.height);
+    grub_video_fb_fill_rect_untrans (color, 0, 0,
+                              dx, transformed_viewport.height);
   else if (dx < 0)
     {
-      if (framebuffer.render_target->viewport.width < grub_abs (dx))
-        dx = -framebuffer.render_target->viewport.width;
+      if (transformed_viewport.width < grub_abs (dx))
+        dx = -transformed_viewport.width;
 
-      grub_video_fb_fill_rect (color, framebuffer.render_target->viewport.width + dx, 0,
-                                -dx, framebuffer.render_target->viewport.height);
+      grub_video_fb_fill_rect_untrans (color, transformed_viewport.width + dx, 0,
+				       -dx, transformed_viewport.height);
     }
 
   return GRUB_ERR_NONE;
@@ -1228,6 +1324,8 @@ grub_video_fb_create_render_target (struct grub_video_fbrender_target **result,
   /* TODO: Implement other types too.
      Currently only 32bit render targets are supported.  */
 
+  target->mode_info.rotation = GRUB_VIDEO_ROTATE_NONE;
+
   /* Mark render target as allocated.  */
   target->is_allocated = 1;
 
@@ -1253,6 +1351,8 @@ grub_video_fb_create_render_target (struct grub_video_fbrender_target **result,
   /* Setup render target format.  */
   target->mode_info.width = width;
   target->mode_info.height = height;
+  target->mode_info.original_width = width;
+  target->mode_info.original_height = height;
   switch (mode_type)
     {
     case GRUB_VIDEO_MODE_TYPE_INDEX_COLOR
@@ -1336,6 +1436,17 @@ grub_video_fb_create_render_target_from_pointer (struct grub_video_fbrender_targ
 
   grub_memcpy (&(target->mode_info), mode_info, sizeof (target->mode_info));
 
+  target->mode_info.rotation = GRUB_VIDEO_ROTATE_270; ///!!!
+  target->mode_info.original_width = target->mode_info.width;
+  target->mode_info.original_height = target->mode_info.height;
+
+  if (target->mode_info.rotation == GRUB_VIDEO_ROTATE_90
+      || target->mode_info.rotation == GRUB_VIDEO_ROTATE_270)
+    {
+      target->mode_info.width = target->mode_info.original_height;
+      target->mode_info.height = target->mode_info.original_width;
+    }
+
   /* Reset viewport, region and area to match new mode.  */
   target->viewport.x = 0;
   target->viewport.y = 0;
@@ -1356,9 +1467,9 @@ grub_video_fb_create_render_target_from_pointer (struct grub_video_fbrender_targ
   target->area_offset_y = 0;
 
   /* Clear render target with black and maximum transparency.  */
-  for (y = 0; y < mode_info->height; y++)
+  for (y = 0; y < target->mode_info.original_height; y++)
     grub_memset (target->data + mode_info->pitch * y, 0,
-		 mode_info->bytes_per_pixel * mode_info->width);
+		 mode_info->bytes_per_pixel * target->mode_info.original_width);
 
   /* Save result to caller.  */
   *result = target;
@@ -1427,7 +1538,7 @@ doublebuf_blit_update_screen (void)
 		 * (framebuffer.current_dirty.last_line
 		    - framebuffer.current_dirty.first_line));
   framebuffer.current_dirty.first_line
-    = framebuffer.back_target->mode_info.height;
+    = framebuffer.back_target->mode_info.original_height;
   framebuffer.current_dirty.last_line = 0;
 
   return GRUB_ERR_NONE;
@@ -1636,7 +1747,7 @@ grub_video_fb_setup (unsigned int mode_type, unsigned int mode_mask,
   framebuffer.render_page = 0;
   framebuffer.set_page = 0;
   framebuffer.current_dirty.first_line
-    = framebuffer.back_target->mode_info.height;
+    = framebuffer.back_target->mode_info.original_height;
   framebuffer.current_dirty.last_line = 0;
 
   mode_info->mode_type &= ~GRUB_VIDEO_MODE_TYPE_DOUBLE_BUFFERED;
@@ -1667,6 +1778,9 @@ grub_video_fb_get_info_and_fini (struct grub_video_mode_info *mode_info,
 {
   grub_memcpy (mode_info, &(framebuffer.back_target->mode_info),
 	       sizeof (*mode_info));
+
+  mode_info->width = framebuffer.back_target->mode_info.original_width;
+  mode_info->height = framebuffer.back_target->mode_info.original_height;
 
   /* We are about to load a kernel.  Switch back to page zero, since some
      kernel drivers expect that.  */
