@@ -408,8 +408,9 @@ and @samp{header_length}), must have a 32-bit unsigned sum of zero.
 
 @node Header tags
 @subsection General tag structure
-Tags constitutes a buffer of structures following each other padded on @samp{u32} size.
-Every structure has following format:
+Tags constitutes a buffer of structures following each other padded when necessary
+in order for each tag to start at 8-bytes aligned address. Tags are terminated by
+a tag of type @samp{0} and size @samp{8}. Every structure has following format:
 
 @example
 @group
