@@ -60,6 +60,7 @@ struct grub_module_verifier_arch archs[] = {
       R_IA64_PCREL64LSB,
       R_IA64_LTOFF22X,
       R_IA64_LTOFF22,
+      R_IA64_GPREL64I,
       R_IA64_LTOFF_FPTR22,
       R_IA64_LDXMOV,
       -1
@@ -106,11 +107,14 @@ struct grub_module_verifier_arch archs[] = {
       R_AARCH64_ABS64,
       R_AARCH64_CALL26,
       R_AARCH64_JUMP26,
+      R_AARCH64_ADR_GOT_PAGE,
+      R_AARCH64_LD64_GOT_LO12_NC,
       -1
     }, (int[]){
       R_AARCH64_ADR_PREL_PG_HI21,
       R_AARCH64_ADD_ABS_LO12_NC,
       R_AARCH64_LDST64_ABS_LO12_NC,
+      R_AARCH64_PREL32,
       -1
     }
   },
@@ -124,7 +128,15 @@ struct platform_whitelist {
 
 static struct platform_whitelist whitelists[] = {
   {"i386", "xen", (const char *[]) {"all_video", 0}},
-  {"x86_64", "xen", (const char *[]) {"all_video", 0}}
+  {"x86_64", "xen", (const char *[]) {"all_video", 0}},
+  {"sparc64", "ieee1275", (const char *[]) {"all_video", 0}},
+
+  /* video is compiled-in on MIPS.  */
+  {"mipsel", "loongson", (const char *[]) {"all_video", 0}},
+  {"mipsel", "qemu_mips", (const char *[]) {"all_video", 0}},
+  {"mipsel", "arc", (const char *[]) {"all_video", 0}},
+  {"mips", "qemu_mips", (const char *[]) {"all_video", 0}},
+  {"mips", "arc", (const char *[]) {"all_video", 0}},
 };
 
 

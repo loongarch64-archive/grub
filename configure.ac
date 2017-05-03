@@ -31,7 +31,7 @@ dnl (such as BUILD_CC, BUILD_CFLAGS, etc.) for the build type and variables
 dnl with the prefix "TARGET_" (such as TARGET_CC, TARGET_CFLAGS, etc.) are
 dnl used for the target type. See INSTALL for full list of variables.
 
-AC_INIT([GRUB],[2.02~beta3],[bug-grub@gnu.org])
+AC_INIT([GRUB],[2.03],[bug-grub@gnu.org])
 
 AC_CONFIG_AUX_DIR([build-aux])
 
@@ -1240,11 +1240,14 @@ grub_CHECK_NO_PIE_ONEWORD
 if [ x"$pie_possible" = xyes ]; then
   TARGET_CFLAGS="$TARGET_CFLAGS -fno-PIE -fno-pie"
 fi
-if [ x"$nopie_possible" = xyes ] &&  [ x"$pie_possible" = xyes ]; then
-  TARGET_LDFLAGS="$TARGET_LDFLAGS -no-pie"
-fi
-if [ x"$nopie_oneword_possible" = xyes ] &&  [ x"$pie_possible" = xyes ]; then
-  TARGET_LDFLAGS="$TARGET_LDFLAGS -nopie"
+
+if [ x"$link_nopie_needed" = xyes ] || [ x"$pie_possible" = xyes ]; then
+  if [ x"$nopie_possible" = xyes ]; then
+    TARGET_LDFLAGS="$TARGET_LDFLAGS -no-pie"
+  fi
+  if [ x"$nopie_oneword_possible" = xyes ]; then
+    TARGET_LDFLAGS="$TARGET_LDFLAGS -nopie"
+  fi
 fi]
 
 CFLAGS="$TARGET_CFLAGS"
@@ -1257,9 +1260,12 @@ grub_CHECK_PIC
 # and reload $gp in every function.
 # GCC implements it using symbol __gnu_local_gp in non-PIC as well.
 # However with clang we need PIC for this reloading to happen.
+# With arm64 we need relocations that are in some way representable in
+# PE as we need to support arm64-efi. Without -fPIC clang generates
+# movk's which aren't representable.
 # Since default varies across dictributions use either -fPIC or -fno-PIC
 # explicitly.
-if ( test x$target_cpu = xmips || test x$target_cpu = xmipsel ) && test "x$grub_cv_cc_target_clang" = xyes ; then
+if ( test x$target_cpu = xmips || test x$target_cpu = xmipsel || test x$target_cpu = xarm64 ) && test "x$grub_cv_cc_target_clang" = xyes ; then
    TARGET_CFLAGS="$TARGET_CFLAGS -fPIC"
 elif [ x"$pic_possible" = xyes ]; then
    TARGET_CFLAGS="$TARGET_CFLAGS -fno-PIC"

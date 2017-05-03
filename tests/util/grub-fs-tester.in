@@ -106,7 +106,10 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 	    MAXBLKSIZE=1048576
 	    ;;
 	xnilfs2)
-	    MINBLKSIZE=1024
+	    # nilfs2 supports blocksizes from 1024 to 4096
+	    # but non-4096 results in kernel oops in some cases,
+	    # avoid it.
+	    MINBLKSIZE=4096
 	    MAXBLKSIZE=4096
 	    ;;
 	xsfs*)
@@ -288,7 +291,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 		    ;;
 	    # FS LIMITATION: btrfs label is at most 255 UTF-8 chars
 		x"btrfs"*)
-		    FSLABEL="grub_;/testé莭莽😁киритi urewfceniuewruevrewnuuireurevueurnievrewfnerfcnevirivinrewvnirewnivrewiuvcrewvnuewvrrrewniuerwreiuviurewiuviurewnuvewnvrenurnunuvrevuurerejiremvreijnvcreivire nverivnreivrevnureiorfnfrvoeoiroireoireoifrefoieroifoireoif";;
+		    FSLABEL="grub_;/testé莭莽😁киритi urewfceniuewruevrewnuuireurevueurnievrewfnerfcnevirivinrewvnirewnivrewiuvcrewvnuewvrrrewniuerwreiuviurewiuviurewnuvewnvrenurnunuvrevuurerejiremvreijnvcreivire nverivnreivrevnureiorfnfrvoeoiroireoireoifrefoieroifoireoi";;
 
 	    # FS LIMITATION: exfat is at most 15 UTF-16 chars
 		x"exfat")
@@ -684,7 +687,7 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 		    MOUNTOPTS="iocharset=utf8,compression,"
 		    MOUNTFS="ntfs-3g";;
 		x"udf")
-		    "/usr/bin/mkudffs" -b $BLKSIZE --utf8 --lvid="$FSLABEL" "${MOUNTDEVICE}"
+		    "mkudffs" --utf8 -b $BLKSIZE --lvid="$FSLABEL" "${MOUNTDEVICE}"
 		    MOUNTOPTS="iocharset=utf8,bs=$BLKSIZE,";;
 		x"ufs2")
 		    "mkfs.ufs" -b $BLKSIZE -L "$FSLABEL" -O 2 "${MOUNTDEVICE}"
@@ -942,6 +945,9 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 		*)
 		    BLOCKCNT=5242880;;
 	    esac
+	    # Make sure file is not exact multiple of block size. This helps to force
+	    # tail packing in case of squash4.
+	    : $((BLOCKCNT--))
 	    case x"$fs" in
 		x"ntfscomp")
 		    setfattr -h -v 0x00000800 -n system.ntfs_attrib_be "$MNTPOINTRW/$OSDIR";;
@@ -1028,8 +1034,8 @@ for LOGSECSIZE in $(range "$MINLOGSECSIZE" "$MAXLOGSECSIZE" 1); do
 		x"romfs")
 		    genromfs -V "$FSLABEL" -f "${FSIMAGEP}0.img" -d "$MASTER" ;;
 		xsquash4_*)
-		    echo mksquashfs "$MASTER" "${FSIMAGEP}0.img" -comp "${fs/squash4_/}" -b $BLKSIZE
-		    mksquashfs "$MASTER" "${FSIMAGEP}0.img" -comp "${fs/squash4_/}" -b $BLKSIZE ;;
+		    echo mksquashfs "$MASTER" "${FSIMAGEP}0.img" -always-use-fragments -comp "${fs/squash4_/}" -b $BLKSIZE
+		    mksquashfs "$MASTER" "${FSIMAGEP}0.img" -always-use-fragments -comp "${fs/squash4_/}" -b $BLKSIZE ;;
 		x"bfs")
 		    sleep 1
 		    fusermount -u "$MNTPOINTRW"
