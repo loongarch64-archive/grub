@@ -146,18 +146,18 @@ enum
 };
 
 static int
-grub_ieee1275_parse_bootpath (const char *devpath, char *bootpath,
+grub_ieee1275_parse_bootargs (const char *devpath, char *bootpath,
                               char **device, struct grub_net_card **card)
 {
   char *args;
   char *comma_char = 0;
   char *equal_char = 0;
   grub_size_t field_counter = 0;
-
   grub_net_network_level_address_t client_addr, gateway_addr, subnet_mask;
   grub_net_link_level_address_t hw_addr;
   grub_net_interface_flags_t flags = 0;
   struct grub_net_network_level_interface *inter = NULL;
+  grub_uint16_t vlantag = 0;
 
   hw_addr.type = GRUB_NET_LINK_LEVEL_PROTOCOL_ETHERNET;
 
@@ -175,6 +175,11 @@ grub_ieee1275_parse_bootpath (const char *devpath, char *bootpath,
           *equal_char = 0;
           grub_env_set_net_property ((*card)->name, args, equal_char + 1,
                                      grub_strlen(equal_char + 1));
+
+          if ((grub_strcmp (args, "vtag") == 0) &&
+              (grub_strlen (equal_char + 1) == 8))
+            vlantag = grub_strtoul (equal_char + 1 + 4, 0, 16);
+
           *equal_char = '=';
         }
       else
@@ -213,8 +218,10 @@ grub_ieee1275_parse_bootpath (const char *devpath, char *bootpath,
                                   hw_addr.mac, sizeof(hw_addr.mac), 0);
       inter = grub_net_add_addr ((*card)->name, *card, &client_addr, &hw_addr,
                                  flags);
+      inter->vlantag = vlantag;
       grub_net_add_ipv4_local (inter,
                           __builtin_ctz (~grub_le_to_cpu32 (subnet_mask.ipv4)));
+
     }
 
   if (gateway_addr.ipv4 != 0)
@@ -267,7 +274,7 @@ grub_ieee1275_net_config_real (const char *devpath, char **device, char **path,
       }
     grub_free (canon);
 
-    grub_ieee1275_parse_bootpath (devpath, bootpath, device, &card);
+    grub_ieee1275_parse_bootargs (devpath, bootpath, device, &card);
 
     for (i = 0; i < ARRAY_SIZE (bootp_response_properties); i++)
       if (grub_ieee1275_get_property_length (grub_ieee1275_chosen,
