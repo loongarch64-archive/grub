@@ -16,26 +16,17 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/types.h>
-#include <grub/symbol.h>
-#include <grub/uboot/uboot.h>
-#include <grub/datetime.h>
-#include <grub/dl.h>
+#include <grub/misc.h>
+#include <grub/mm.h>
+#include <grub/kernel.h>
+#include <grub/loader.h>
 
-GRUB_MOD_LICENSE ("GPLv3+");
-
-/* No simple platform-independent RTC access exists in U-Boot. */
-
-grub_err_t
-grub_get_datetime (struct grub_datetime *datetime __attribute__ ((unused)))
+void
+grub_reboot (void)
 {
-  return grub_error (GRUB_ERR_INVALID_COMMAND,
-		     "can\'t get datetime using U-Boot");
-}
+  grub_machine_fini (GRUB_LOADER_FLAG_NORETURN);
 
-grub_err_t
-grub_set_datetime (struct grub_datetime * datetime __attribute__ ((unused)))
-{
-  return grub_error (GRUB_ERR_INVALID_COMMAND,
-		     "can\'t set datetime using U-Boot");
+  /* Just stop here */
+
+  while (1);
 }

@@ -155,6 +155,7 @@ grub_machine_init (void)
   grub_machine_timer_init ();
   grub_cros_init ();
   grub_pl050_init ();
+  grub_machine_timer_init ();
 }
 
 void

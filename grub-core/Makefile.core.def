@@ -154,7 +154,6 @@ kernel = {
   uboot = term/uboot/console.c;
   arm_uboot = kern/arm/uboot/init.c;
   arm_uboot = kern/arm/uboot/uboot.S;
-<<<<<<< HEAD
 
   arm_coreboot = kern/arm/coreboot/init.c;
   arm_coreboot = kern/arm/coreboot/timer.c;
@@ -167,8 +166,10 @@ kernel = {
   arm_coreboot = term/arm/cros_ec.c;
   arm_coreboot = commands/keylayouts.c;
   arm_coreboot = kern/arm/coreboot/dma.c;
-=======
->>>>>>> master
+
+  arm_coreboot = kern/arm/coreboot/init.c;
+  arm_coreboot = kern/arm/coreboot/timer.c;
+  arm_coreboot = kern/arm/coreboot/coreboot.S;
 
   terminfoinkernel = term/terminfo.c;
   terminfoinkernel = term/tparm.c;
@@ -247,6 +248,7 @@ kernel = {
 
   coreboot = kern/coreboot/mmap.c;
   i386_coreboot = kern/i386/coreboot/cbtable.c;
+  coreboot = kern/coreboot/cbtable.c;
   arm_coreboot = kern/arm/coreboot/cbtable.c;
 
   i386_multiboot = kern/i386/multiboot_mmap.c;
@@ -667,6 +669,7 @@ module = {
 module = {
   name = cbtable;
   common = kern/i386/coreboot/cbtable.c;
+  common = kern/coreboot/cbtable.c;
   enable = i386_pc;
   enable = i386_efi;
   enable = i386_qemu;
@@ -864,7 +867,8 @@ module = {
   efi = lib/efi/halt.c;
   ieee1275 = lib/ieee1275/halt.c;
   emu = lib/emu/halt.c;
-  uboot = lib/uboot/halt.c;
+  uboot = lib/dummy/halt.c;
+  arm_coreboot = lib/dummy/halt.c;
 };
 
 module = {
@@ -882,6 +886,7 @@ module = {
   mips_qemu_mips = lib/mips/qemu_mips/reboot.c;
   xen = lib/xen/reboot.c;
   uboot = lib/uboot/reboot.c;
+  arm_coreboot = lib/dummy/reboot.c;
   common = commands/reboot.c;
 };*/
 
@@ -1575,8 +1580,8 @@ module = {
   name = datetime;
   cmos = lib/cmos_datetime.c;
   efi = lib/efi/datetime.c;
-  uboot = lib/uboot/datetime.c;
-  arm_coreboot = lib/uboot/datetime.c;
+  uboot = lib/dummy/datetime.c;
+  arm_coreboot = lib/dummy/datetime.c;
   sparc64_ieee1275 = lib/ieee1275/datetime.c;
   powerpc_ieee1275 = lib/ieee1275/datetime.c;
   sparc64_ieee1275 = lib/ieee1275/cmos.c;

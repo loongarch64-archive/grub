@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2007,2008,2013  Free Software Foundation, Inc.
+ *  Copyright (C) 2013  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,25 +16,25 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/coreboot/lbio.h>
 #include <grub/types.h>
-#include <grub/err.h>
-#include <grub/misc.h>
+#include <grub/symbol.h>
+#include <grub/datetime.h>
 #include <grub/dl.h>
-#include <grub/arm/startup.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
-#pragma GCC diagnostic ignored "-Wcast-align"
+/* No simple platform-independent RTC access exists in U-Boot. */
 
-grub_linuxbios_table_header_t
-grub_linuxbios_get_tables (void)
+grub_err_t
+grub_get_datetime (struct grub_datetime *datetime __attribute__ ((unused)))
 {
-  grub_linuxbios_table_header_t table_header
-    = (grub_linuxbios_table_header_t) grub_arm_saved_registers.r[0];
+  return grub_error (GRUB_ERR_INVALID_COMMAND,
+		     "can\'t get datetime on this machine");
+}
 
-  if (!grub_linuxbios_check_signature (table_header))
-    return 0;
-
-  return table_header;
+grub_err_t
+grub_set_datetime (struct grub_datetime * datetime __attribute__ ((unused)))
+{
+  return grub_error (GRUB_ERR_INVALID_COMMAND,
+		     "can\'t set datetime on this machine");
 }

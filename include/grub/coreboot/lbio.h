@@ -106,4 +106,10 @@ EXPORT_FUNC(grub_linuxbios_table_iterate) (int (*hook) (grub_linuxbios_table_ite
 					   void *),
 					   void *hook_data);
 
+grub_linuxbios_table_header_t
+grub_linuxbios_get_tables (void);
+
+int
+grub_linuxbios_check_signature (grub_linuxbios_table_header_t tbl_header);
+
 #endif
