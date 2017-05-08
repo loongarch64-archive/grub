@@ -167,10 +167,6 @@ kernel = {
   arm_coreboot = commands/keylayouts.c;
   arm_coreboot = kern/arm/coreboot/dma.c;
 
-  arm_coreboot = kern/arm/coreboot/init.c;
-  arm_coreboot = kern/arm/coreboot/timer.c;
-  arm_coreboot = kern/arm/coreboot/coreboot.S;
-
   terminfoinkernel = term/terminfo.c;
   terminfoinkernel = term/tparm.c;
   terminfoinkernel = commands/extcmd.c;
