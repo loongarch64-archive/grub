@@ -847,7 +847,7 @@ module = {
   common = commands/gptsync.c;
 };
 
-/*module = {
+module = {
   name = halt;
   nopc = commands/halt.c;
   i386_pc = commands/i386/pc/halt.c;
@@ -884,7 +884,7 @@ module = {
   uboot = lib/uboot/reboot.c;
   arm_coreboot = lib/dummy/reboot.c;
   common = commands/reboot.c;
-};*/
+};
 
 module = {
   name = hashsum;
