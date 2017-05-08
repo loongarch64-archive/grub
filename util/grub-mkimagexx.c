@@ -267,7 +267,8 @@ SUFFIX (grub_mkimage_generate_elf) (const struct grub_install_image_target_desc 
   ehdr->e_entry = grub_host_to_target32 (target_addr);
   phdr->p_vaddr = grub_host_to_target32 (target_addr);
   phdr->p_paddr = grub_host_to_target32 (target_addr);
-  phdr->p_align = grub_host_to_target32 (layout->align > image_target->link_align ? layout->align : image_target->link_align);
+  phdr->p_align = grub_host_to_target32 (layout->align > image_target->link_align ?
+					 layout->align : image_target->link_align);
   if (image_target->id == IMAGE_LOONGSON_ELF)
     ehdr->e_flags = grub_host_to_target32 (0x1000 | EF_MIPS_NOREORDER 
 					   | EF_MIPS_PIC | EF_MIPS_CPIC);

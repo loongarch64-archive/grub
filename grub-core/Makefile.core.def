@@ -154,6 +154,7 @@ kernel = {
   uboot = term/uboot/console.c;
   arm_uboot = kern/arm/uboot/init.c;
   arm_uboot = kern/arm/uboot/uboot.S;
+<<<<<<< HEAD
 
   arm_coreboot = kern/arm/coreboot/init.c;
   arm_coreboot = kern/arm/coreboot/timer.c;
@@ -166,6 +167,8 @@ kernel = {
   arm_coreboot = term/arm/cros_ec.c;
   arm_coreboot = commands/keylayouts.c;
   arm_coreboot = kern/arm/coreboot/dma.c;
+=======
+>>>>>>> master
 
   terminfoinkernel = term/terminfo.c;
   terminfoinkernel = term/tparm.c;

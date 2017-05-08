@@ -167,7 +167,7 @@ VARIABLE(grub_arm_saved_registers)
 	.long	0	@ r4
 	.long	0	@ r5
 	.long	0	@ r6
-	.long	0	@ r7	
+	.long	0	@ r7
 	.long	0	@ r8
 	.long	0	@ r9
 	.long	0	@ r10
