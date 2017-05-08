@@ -54,6 +54,8 @@
 #include <lzma.h>
 #endif
 
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 #define TARGET_NO_FIELD 0xffffffff
 
 /* use 2015-01-01T00:00:00+0000 as a stock timestamp */
@@ -1087,7 +1089,7 @@ grub_install_generate_image (const char *dir, const char *prefix,
 	/* fallthrough */
     case IMAGE_COREBOOT:
     case IMAGE_QEMU:
-        if (image_target->elf_target != EM_ARM && layout.kernel_size + layout.bss_size + GRUB_KERNEL_I386_PC_LINK_ADDR > 0x68000)
+	if (image_target->elf_target != EM_ARM && layout.kernel_size + layout.bss_size + GRUB_KERNEL_I386_PC_LINK_ADDR > 0x68000)
 	  grub_util_error (_("kernel image is too big (0x%x > 0x%x)"),
 			   (unsigned) layout.kernel_size + (unsigned) layout.bss_size
 			   + GRUB_KERNEL_I386_PC_LINK_ADDR,

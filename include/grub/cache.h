@@ -36,7 +36,7 @@ void EXPORT_FUNC(grub_arch_sync_caches) (void *address, grub_size_t len);
 #ifndef GRUB_MACHINE_EMU
 #if defined (__i386__) || defined (__x86_64__)
 static inline void
-grub_arch_sync_dma_caches (void *address __attribute__ ((unused)),
+grub_arch_sync_dma_caches (volatile void *address __attribute__ ((unused)),
 			   grub_size_t len __attribute__ ((unused)))
 {
 }
