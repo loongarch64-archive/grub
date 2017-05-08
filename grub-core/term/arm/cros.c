@@ -4,6 +4,8 @@
  *  Copyright (C) 2012  Google Inc.
  *  Copyright (C) 2016  Free Software Foundation, Inc.
  *
+ *  This is based on depthcharge code.
+ *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
