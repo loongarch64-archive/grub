@@ -509,6 +509,14 @@ assumes that no bss segment is present.
 
 @end table
 
+Note: This information does not need to be provided if the kernel image
+is in @sc{elf} format, but it must be provided if the image is in a.out
+format or in some other format. When the address tag is present it must
+be used in order to load the image, regardless of whether an @sc{elf}
+header is also present. Compliant boot loaders must be able to load
+images that are either in @sc{elf} format or contain the address tag
+embedded in the Multiboot2 header.
+
 @subsection The entry address tag of Multiboot2 header
 
 @example
