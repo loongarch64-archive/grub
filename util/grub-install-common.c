@@ -776,6 +776,7 @@ static struct
     [GRUB_INSTALL_PLATFORM_ARM_COREBOOT] =     { "arm",     "coreboot"  },
     [GRUB_INSTALL_PLATFORM_RISCV32_EFI] =      { "riscv32", "efi"       },
     [GRUB_INSTALL_PLATFORM_RISCV64_EFI] =      { "riscv64", "efi"       },
+    [GRUB_INSTALL_PLATFORM_LOONGARCH64_EFI] =  { "loongarch64", "efi"   },
   }; 
 
 char *
