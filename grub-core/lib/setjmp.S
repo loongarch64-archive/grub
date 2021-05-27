@@ -17,6 +17,8 @@
 #include "./arm64/setjmp.S"
 #elif defined(__riscv)
 #include "./riscv/setjmp.S"
+#elif defined(__loongarch64)
+#include "./loongarch64/setjmp.S"
 #else
 #error "Unknown target cpu type"
 #endif
