@@ -20,6 +20,10 @@ endif
 if COND_powerpc_ieee1275
   CFLAGS_PLATFORM += -mcpu=powerpc
 endif
+if COND_loongarch64
+  CFLAGS_PLATFORM += -fno-strict-aliasing -march=loongarch -mabi=lp64 -fno-plt -Wa,-mla-global-with-pcrel
+  CPPFLAGS_PLATFORM = -fno-strict-aliasing -march=loongarch -mabi=lp64 -fno-plt -Wa,-mla-global-with-pcrel
+endif
 
 # Other options
 

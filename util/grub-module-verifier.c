@@ -176,6 +176,32 @@ struct grub_module_verifier_arch archs[] = {
       -1
     }
   },
+  { "loongarch64", 8, 0, EM_LOONGARCH64, GRUB_MODULE_VERIFY_SUPPORTS_REL | GRUB_MODULE_VERIFY_SUPPORTS_RELA, (int[]){
+      R_LARCH_NONE,
+      R_LARCH_64,
+      R_LARCH_MARK_LA,
+      R_LARCH_SOP_PUSH_PCREL,
+      R_LARCH_SOP_PUSH_ABSOLUTE,
+      R_LARCH_SOP_PUSH_PLT_PCREL,
+      R_LARCH_SOP_SUB,
+      R_LARCH_SOP_SL,
+      R_LARCH_SOP_SR,
+      R_LARCH_SOP_ADD,
+      R_LARCH_SOP_AND,
+      R_LARCH_SOP_IF_ELSE,
+      R_LARCH_SOP_POP_32_S_10_5,
+      R_LARCH_SOP_POP_32_U_10_12,
+      R_LARCH_SOP_POP_32_S_10_12,
+      R_LARCH_SOP_POP_32_S_10_16,
+      R_LARCH_SOP_POP_32_S_10_16_S2,
+      R_LARCH_SOP_POP_32_S_5_20,
+      R_LARCH_SOP_POP_32_S_0_5_10_16_S2,
+      R_LARCH_SOP_POP_32_S_0_10_10_16_S2,
+      -1
+    }, (int[]){
+      -1
+    }
+  },
 };
 
 struct platform_whitelist {
