@@ -654,6 +654,22 @@ static const struct grub_install_image_target_desc image_targets[] =
       .pe_target = GRUB_PE32_MACHINE_RISCV64,
       .elf_target = EM_RISCV,
     },
+    {
+      .dirname = "loongarch64-efi",
+      .names = { "loongarch64-efi", NULL },
+      .voidp_sizeof = 8,
+      .bigendian = 0,
+      .id = IMAGE_EFI,
+      .flags = PLATFORM_FLAGS_NONE,
+      .total_module_size = TARGET_NO_FIELD,
+      .decompressor_compressed_size = TARGET_NO_FIELD,
+      .decompressor_uncompressed_size = TARGET_NO_FIELD,
+      .decompressor_uncompressed_addr = TARGET_NO_FIELD,
+      .section_align = GRUB_PE32_SECTION_ALIGNMENT,
+      .vaddr_offset = EFI64_HEADER_SIZE,
+      .pe_target = GRUB_PE32_MACHINE_LOONGARCH64,
+      .elf_target = EM_LOONGARCH64,
+    },
   };
 
 #include <grub/lib/LzmaEnc.h>

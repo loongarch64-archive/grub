@@ -99,6 +99,10 @@ case "$target_cpu" in
   i[[3456]]86)	target_cpu=i386 ;;
   amd64)	target_cpu=x86_64 ;;
   sparc)	target_cpu=sparc64 ;;
+  loongarch64)
+                target_cpu=loongarch64
+		machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_CPU_LOONGARCH64=1"
+		;;
   mipsel|mips64el)
                 target_cpu=mipsel
 		machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_CPU_MIPSEL=1"
@@ -137,6 +141,7 @@ if test "x$with_platform" = x; then
     powerpc64-*) platform=ieee1275 ;;
     powerpc64le-*) platform=ieee1275 ;;
     sparc64-*) platform=ieee1275 ;;
+    loongarch64-*) platform=efi;;
     mipsel-*) platform=loongson ;;
     mips-*) platform=arc ;;
     ia64-*) platform=efi ;;
@@ -188,6 +193,7 @@ case "$target_cpu"-"$platform" in
   mipsel-yeeloong) platform=loongson ;;
   mipsel-fuloong) platform=loongson ;;
   mipsel-loongson) ;;
+  loongarch64-efi) ;;
   arm-uboot) ;;
   arm-coreboot) ;;
   arm-efi) ;;
@@ -246,6 +252,7 @@ case "$platform" in
   pc)		machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_MACHINE_PCBIOS=1" ;;
   emu)		machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_MACHINE_EMU=1" ;;
   loongson)	machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_MACHINE_MIPS_LOONGSON=1" ;;
+  loongarch64)	machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_MACHINE_LOONARCH64=1" ;;
   qemu_mips)	machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_MACHINE_MIPS_QEMU_MIPS=1" ;;
   arc)	machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_MACHINE_ARC=1" ;;
 esac
@@ -2004,6 +2011,8 @@ AM_CONDITIONAL([COND_mips_arc], [test "(" x$target_cpu = xmips -o x$target_cpu =
 AM_CONDITIONAL([COND_sparc64_ieee1275], [test x$target_cpu = xsparc64 -a x$platform = xieee1275])
 AM_CONDITIONAL([COND_sparc64_emu], [test x$target_cpu = xsparc64 -a x$platform = xemu])
 AM_CONDITIONAL([COND_powerpc_ieee1275], [test x$target_cpu = xpowerpc -a x$platform = xieee1275])
+AM_CONDITIONAL([COND_loongarch64_efi], [test x$target_cpu = xloongarch64 -a x$platform = xefi])
+AM_CONDITIONAL([COND_loongarch64], [test x$target_cpu = xloongarch64])
 AM_CONDITIONAL([COND_mips], [test x$target_cpu = xmips -o x$target_cpu = xmipsel])
 AM_CONDITIONAL([COND_mipsel], [test x$target_cpu = xmipsel])
 AM_CONDITIONAL([COND_mipseb], [test x$target_cpu = xmips])
