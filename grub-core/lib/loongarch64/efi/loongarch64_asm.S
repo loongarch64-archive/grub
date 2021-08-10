@@ -39,19 +39,19 @@ reset_system:
 
 FUNCTION(grub_efi_loongarch64_reset_cold)
 	b		reset_system
-	li		$a0, 0
+	li.w		$a0, 0
 
 FUNCTION(grub_efi_loongarch64_reset_warm)
 	b		reset_system
-	li		$a0, 1
+	li.w		$a0, 1
 
 FUNCTION(grub_efi_loongarch64_reset_shutdown)
 	b		reset_system
-	li		$a0, 2
+	li.w		$a0, 2
 
 FUNCTION(grub_efi_loongarch64_reset_suspend)
 	b		reset_system
-	li		$a0, 3
+	li.w		$a0, 3
 
 VARIABLE (grub_efi_loongarch64_reset_end)
 
