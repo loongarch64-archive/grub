@@ -146,7 +146,7 @@ grub_relocator64_boot (struct grub_relocator *rel,
 
   grub_uint64_t val;
   __asm__ __volatile__(
-		  "li      %0, 0x4\n\t"
+		  "li.w      %0, 0x4\n\t"
 		  "csrxchg $r0, %0, 0x0\n\t"
 		  : "=r"(val)
 		  :
