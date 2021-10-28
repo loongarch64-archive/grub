@@ -40,5 +40,6 @@ struct linux_riscv_kernel_header
 };
 
 #define linux_arch_kernel_header linux_riscv_kernel_header
+# define GRUB_LINUX_ARCH_MAGIC_SIGNATURE GRUB_LINUX_RISCV_MAGIC_SIGNATURE
 
 #endif /* ! GRUB_RISCV64_LINUX_HEADER */
