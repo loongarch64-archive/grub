@@ -60,7 +60,7 @@ grub_arch_efi_linux_check_image (struct linux_arch_kernel_header * lh)
   struct grub_pe32_coff_header *coff_header;
   struct grub_pe32_optional_header *optional_header;
 
-  if (lh->magic != GRUB_LINUX_ARMXX_MAGIC_SIGNATURE)
+  if (lh->magic != GRUB_LINUX_ARCH_MAGIC_SIGNATURE)
     return grub_error(GRUB_ERR_BAD_OS, "invalid magic number");
 
   if ((lh->code0 & 0xffff) != GRUB_PE32_MAGIC)

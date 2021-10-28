@@ -39,7 +39,7 @@ struct linux_arm64_kernel_header
 };
 
 #if defined(__aarch64__)
-# define GRUB_LINUX_ARMXX_MAGIC_SIGNATURE GRUB_LINUX_ARM64_MAGIC_SIGNATURE
+# define GRUB_LINUX_ARCH_MAGIC_SIGNATURE GRUB_LINUX_ARM64_MAGIC_SIGNATURE
 # define linux_arch_kernel_header linux_arm64_kernel_header
 #endif
 

@@ -35,7 +35,7 @@ struct linux_arm_kernel_header {
 };
 
 #if defined(__arm__)
-# define GRUB_LINUX_ARMXX_MAGIC_SIGNATURE GRUB_LINUX_ARM_MAGIC_SIGNATURE
+# define GRUB_LINUX_ARCH_MAGIC_SIGNATURE GRUB_LINUX_ARM_MAGIC_SIGNATURE
 # define linux_arch_kernel_header linux_arm_kernel_header
 #endif
 
