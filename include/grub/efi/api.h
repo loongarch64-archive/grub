@@ -149,6 +149,11 @@
     { 0x8E, 0x3F, 0x00, 0xA0, 0xC9, 0x69, 0x72, 0x3B } \
   }
 
+#define GRUB_EFI_LOAD_FILE2_PROTOCOL_GUID \
+  { 0x4006c0c1, 0xfcb3, 0x403e, \
+    { 0x99, 0x6d, 0x4a, 0x6c, 0x87, 0x24, 0xe0, 0x6d } \
+  }
+
 #define GRUB_EFI_SIMPLE_FILE_SYSTEM_PROTOCOL_GUID \
   { 0x0964e5b22, 0x6459, 0x11d2, \
     { 0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b } \
@@ -1733,6 +1738,16 @@ struct grub_efi_rng_protocol
 				grub_efi_uint8_t *rng_value);
 };
 typedef struct grub_efi_rng_protocol grub_efi_rng_protocol_t;
+
+struct grub_efi_load_file2
+{
+  grub_efi_status_t (*load_file)(struct grub_efi_load_file2 *this,
+				 grub_efi_device_path_t *file_path,
+				 grub_efi_boolean_t boot_policy,
+				 grub_efi_uintn_t *buffer_size,
+				 void *buffer);
+};
+typedef struct grub_efi_load_file2 grub_efi_load_file2_t;
 
 #if (GRUB_TARGET_SIZEOF_VOID_P == 4) || defined (__ia64__) \
   || defined (__aarch64__) || defined (__MINGW64__) || defined (__CYGWIN__) \
