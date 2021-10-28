@@ -19,20 +19,21 @@
 #ifndef GRUB_RISCV32_LINUX_HEADER
 #define GRUB_RISCV32_LINUX_HEADER 1
 
-#define GRUB_LINUX_RISCV_MAGIC_SIGNATURE 0x52534356 /* 'RSCV' */
+#define GRUB_LINUX_RISCV_MAGIC_SIGNATURE 0x05435352 /* 'RSC\0x5' */
 
-/* From linux/Documentation/riscv/booting.txt */
+/* From linux/Documentation/riscv/boot-image-header.rst */
 struct linux_riscv_kernel_header
 {
   grub_uint32_t code0;		/* Executable code */
   grub_uint32_t code1;		/* Executable code */
-  grub_uint64_t text_offset;	/* Image load offset */
-  grub_uint64_t res0;		/* reserved */
-  grub_uint64_t res1;		/* reserved */
+  grub_uint64_t text_offset;	/* Image load offset, little endian */
+  grub_uint64_t image_size;	/* Effective Image size, little endian */
+  grub_uint64_t flags;		/* kernel flags, little endian */
+  grub_uint32_t version;	/* Version of this header */
+  grub_uint32_t res1;		/* reserved */
   grub_uint64_t res2;		/* reserved */
   grub_uint64_t res3;		/* reserved */
-  grub_uint64_t res4;		/* reserved */
-  grub_uint32_t magic;		/* Magic number, little endian, "RSCV" */
+  grub_uint32_t magic;		/* Magic number, little endian, "RSC\x05" */
   grub_uint32_t hdr_offset;	/* Offset of PE/COFF header */
 };
 
