@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2021  Loongson Technology Corporation Limited, 
+ *  Copyright (C) 2021  Loongson Technology Corporation Limited
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -178,8 +178,8 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	      {
 	    	opri++;
 	    	oprs[opri]=opr2;
-	      } 
-	    else 
+	      }
+	    else
 	      {
 	    	opri++;
 	    	oprs[opri]=opr3;

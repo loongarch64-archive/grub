@@ -369,10 +369,10 @@ grub_efi_loongarch64_free_boot_params (void)
 void *
 grub_efi_loongarch64_get_smbios_table (void)
 {
-  static grub_efi_loongarch64_smbios_table *smbios_table; 
+  static grub_efi_loongarch64_smbios_table *smbios_table;
   grub_efi_loongarch64_boot_params *old_boot_params;
   struct bootparamsinterface* boot_params;
-  void * tmp_boot_params = NULL;	
+  void * tmp_boot_params = NULL;
   char * p = NULL;
   if(smbios_table)
     return smbios_table;
@@ -383,7 +383,7 @@ grub_efi_loongarch64_get_smbios_table (void)
     grub_dprintf("loongson", "tmp_boot_params is NULL\n");
     return tmp_boot_params;
   }
- 
+
   boot_params = (struct bootparamsinterface *)tmp_boot_params;
   p = (char *)&(boot_params->signature);
   if(grub_strncmp(p, "BPI", 3) == 0)
@@ -466,8 +466,7 @@ grub_efi_loongarch64_grub_calculatechecksum8 (const grub_uint8_t *buffer, grub_e
   return (grub_uint8_t) (0x100 - checksum);
 }
 
-
-grub_uint32_t 
+grub_uint32_t
 grub_efi_loongarch64_memmap_sort(struct memmap array[], grub_uint32_t length, mem_map * bpmem, grub_uint32_t index, grub_uint32_t memtype)
 {
   grub_uint64_t tempmemsize = 0;
@@ -479,12 +478,12 @@ grub_efi_loongarch64_memmap_sort(struct memmap array[], grub_uint32_t length, me
     tempmemsize = array[j].memsize;
     for(t = j + 1; t < length; t++)
     {
-      if(array[j].memstart + tempmemsize == array[t].memstart) 
+      if(array[j].memstart + tempmemsize == array[t].memstart)
       {
         tempmemsize += array[t].memsize;
       }
       else
-      {            
+      {
         break;
       }
    }
@@ -502,4 +501,3 @@ grub_efi_loongarch64_memmap_sort(struct memmap array[], grub_uint32_t length, me
   }
   return index;
 }
-
