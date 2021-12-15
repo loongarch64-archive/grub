@@ -432,7 +432,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
     err = grub_relocator_alloc_chunk_align (relocator, &ch,
 					    0, (0xffffffff - size) + 1,
 					    size, 8,
-					    GRUB_RELOCATOR_PREFERENCE_HIGH, 0);
+					    GRUB_RELOCATOR_PREFERENCE_LOW, 0);
     if (err)
       return err;
     linux_args_addr = get_virtual_current_address (ch);
@@ -509,7 +509,7 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
     err = grub_relocator_alloc_chunk_align (relocator, &ch,
 					    0, (0xffffffff - size) + 1,
 					    size, 0x10000,
-					    GRUB_RELOCATOR_PREFERENCE_HIGH, 0);
+					    GRUB_RELOCATOR_PREFERENCE_LOW, 0);
 
     if (err)
       goto fail;
