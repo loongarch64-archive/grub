@@ -176,7 +176,7 @@ struct grub_module_verifier_arch archs[] = {
       -1
     }
   },
-  { "loongarch64", 8, 0, EM_LOONGARCH64, GRUB_MODULE_VERIFY_SUPPORTS_REL | GRUB_MODULE_VERIFY_SUPPORTS_RELA, (int[]){
+  { "loongarch64", 8, 0, EM_LOONGARCH, GRUB_MODULE_VERIFY_SUPPORTS_REL | GRUB_MODULE_VERIFY_SUPPORTS_RELA, (int[]){
       R_LARCH_NONE,
       R_LARCH_64,
       R_LARCH_MARK_LA,

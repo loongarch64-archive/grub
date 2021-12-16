@@ -668,7 +668,7 @@ static const struct grub_install_image_target_desc image_targets[] =
       .section_align = GRUB_PE32_SECTION_ALIGNMENT,
       .vaddr_offset = EFI64_HEADER_SIZE,
       .pe_target = GRUB_PE32_MACHINE_LOONGARCH64,
-      .elf_target = EM_LOONGARCH64,
+      .elf_target = EM_LOONGARCH,
     },
   };
 
