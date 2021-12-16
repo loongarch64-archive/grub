@@ -28,6 +28,4 @@
 /* LoongArch is little-endian.  */
 #undef GRUB_TARGET_WORDS_BIGENDIAN
 
-#define GRUB_HAVE_UNALIGNED_ACCESS 1
-
 #endif /* ! GRUB_TYPES_CPU_HEADER */
