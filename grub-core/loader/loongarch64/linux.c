@@ -138,7 +138,7 @@ grub_linux_boot (void)
     struct memmap free_mem[GRUB_EFI_LOONGSON_MMAP_MAX];
     struct memmap acpi_table_mem[GRUB_EFI_LOONGSON_MMAP_MAX];
     struct memmap acpi_nvs_mem[GRUB_EFI_LOONGSON_MMAP_MAX];
-    
+
     grub_memset(reserve_mem, 0, sizeof(struct memmap) * GRUB_EFI_LOONGSON_MMAP_MAX);
     grub_memset(free_mem, 0, sizeof(struct memmap) * GRUB_EFI_LOONGSON_MMAP_MAX);
     grub_memset(acpi_table_mem, 0, sizeof(struct memmap) * GRUB_EFI_LOONGSON_MMAP_MAX);
