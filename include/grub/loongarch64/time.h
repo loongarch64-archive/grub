@@ -31,6 +31,7 @@ extern grub_uint32_t grub_arch_cpuclock;
 static inline void
 grub_cpu_idle(void)
 {
+  __asm__ __volatile__("idle 0\n");
 }
 
 #endif
