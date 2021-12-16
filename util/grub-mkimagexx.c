@@ -1128,7 +1128,7 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 		   }
 	       break;
 	       }
-	     case EM_LOONGARCH64:
+	     case EM_LOONGARCH:
 	       {
 		 sym_addr += addend;
 		 switch (ELF_R_TYPE (info))
@@ -1843,7 +1843,7 @@ translate_relocation_pe (struct translate_context *ctx,
 	}
       break;
       break;
-    case EM_LOONGARCH64:
+    case EM_LOONGARCH:
       switch (ELF_R_TYPE (info))
 	{
 	case R_LARCH_64:
