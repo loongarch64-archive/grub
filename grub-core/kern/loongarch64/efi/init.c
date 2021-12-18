@@ -20,7 +20,7 @@
 #include <grub/kernel.h>
 #include <grub/misc.h>
 #include <grub/mm.h>
-#include <grub/cpu/time.h>
+#include <grub/time.h>
 #include <grub/efi/efi.h>
 #include <grub/loader.h>
 #include <grub/machine/loongarch64.h>
@@ -72,4 +72,7 @@ grub_machine_fini (int flags)
   efi_call_1 (b->close_event, tmr_evt);
 
   grub_efi_fini ();
+
+  if (!(flags & GRUB_LOADER_FLAG_EFI_KEEP_ALLOCATED_MEMORY))
+    grub_efi_memory_fini ();
 }
