@@ -34,8 +34,6 @@
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
-#pragma GCC diagnostic ignored "-Wcast-align"
-
 typedef  unsigned long size_t;
 
 static grub_dl_t my_mod;
@@ -250,7 +248,9 @@ grub_linux_boot (void)
         new_interface_mem->map[tmp_index].memtype = GRUB_EFI_LOONGSON_SYSTEM_RAM;
         new_interface_mem->map[tmp_index].memstart = free_mem[j].memstart;
         new_interface_mem->map[tmp_index].memsize = tempMemsize;
-        grub_dprintf("loongson", "map[%d]:type %x, start 0x%llx, end 0x%llx\n",
+        grub_dprintf("loongarch", "map[%d]:type %"PRIuGRUB_UINT32_T", "
+		     "start 0x%"PRIxGRUB_UINT64_T", "
+		     "end 0x%"PRIuGRUB_UINT64_T"\n",
                      tmp_index,
                      new_interface_mem->map[tmp_index].memtype,
                      new_interface_mem->map[tmp_index].memstart,
@@ -274,7 +274,8 @@ grub_linux_boot (void)
       new_interface_mem->mapcount = tmp_index;
       new_interface_mem->header.checksum = 0;
 
-      checksum = grub_efi_loongarch64_grub_calculatechecksum8(new_interface_mem, new_interface_mem->header.length);
+      checksum = grub_efi_loongarch64_grub_calculatechecksum8((grub_uint8_t *) new_interface_mem,
+							      new_interface_mem->header.length);
       new_interface_mem->header.checksum = checksum;
     }
   }
@@ -438,11 +439,11 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
     linux_args_addr = get_virtual_current_address (ch);
   }
 
-  linux_argv = (grub_uint64_t *) linux_args_addr;
+  linux_argv = (void*) linux_args_addr;
   linux_args = (char *) (linux_argv + (linux_argc + 1 + 3));
 
   grub_memcpy (linux_args, "a0", sizeof ("a0"));
-  *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
+  *linux_argv = (grub_uint64_t) linux_args;
   linux_argv++;
   linux_args += ALIGN_UP (sizeof ("a0"), 4);
 
