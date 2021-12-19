@@ -24,394 +24,28 @@
 #include <grub/cpu/memory.h>
 #include <grub/machine/loongarch64.h>
 
-#define loongson_params (&loongson_boot_params->boot_params.efi.smbios.lp)
-#define loongson_boot_params_size ALIGN_UP (sizeof (*loongson_boot_params), 8)
-#define loongson_reset_code_size (&grub_efi_loongarch64_reset_end - &grub_efi_loongarch64_reset_start)
-
-extern grub_uint8_t grub_efi_loongarch64_reset_start;
-extern grub_uint8_t grub_efi_loongarch64_reset_end;
-
-static struct
-{
-  grub_efi_loongarch64_boot_params boot_params;
-  grub_efi_loongarch64_memory_map memory_map;
-  grub_efi_loongarch64_cpu_info cpu_info;
-  grub_efi_loongarch64_system_info system_info;
-  grub_efi_loongarch64_irq_src_routing_table irq_src_routing_table;
-  grub_efi_loongarch64_interface_info interface_info;
-  grub_efi_loongarch64_special_attribute special_attribute;
-  grub_efi_loongarch64_board_devices board_devices;
-} GRUB_PACKED
-* loongson_boot_params;
-
-static void
-grub_efi_loongarch64_init_reset_system (void)
-{
-  grub_efi_loongarch64_boot_params *boot_params;
-  grub_uint8_t *reset_code_addr = (grub_uint8_t *) loongson_boot_params +
-                                  loongson_boot_params_size;
-
-  boot_params = &loongson_boot_params->boot_params;
-  grub_efi_loongarch64_reset_system_addr =
-                 (grub_uint64_t) grub_efi_system_table->runtime_services->reset_system;
-  grub_memcpy (reset_code_addr, &grub_efi_loongarch64_reset_start, loongson_reset_code_size);
-  grub_arch_sync_caches (reset_code_addr, loongson_reset_code_size);
-
-  boot_params->reset_system.reset_cold = (grub_uint64_t) reset_code_addr +
-                                         ((grub_uint64_t) &grub_efi_loongarch64_reset_cold -
-                                          (grub_uint64_t) &grub_efi_loongarch64_reset_start);
-  boot_params->reset_system.reset_warm = (grub_uint64_t) reset_code_addr +
-                                         ((grub_uint64_t) &grub_efi_loongarch64_reset_warm -
-                                          (grub_uint64_t) &grub_efi_loongarch64_reset_start);
-  boot_params->reset_system.shutdown = (grub_uint64_t) reset_code_addr +
-                                         ((grub_uint64_t) &grub_efi_loongarch64_reset_shutdown -
-                                          (grub_uint64_t) &grub_efi_loongarch64_reset_start);
-  boot_params->reset_system.do_suspend = (grub_uint64_t) reset_code_addr +
-                                         ((grub_uint64_t) &grub_efi_loongarch64_reset_suspend -
-                                          (grub_uint64_t) &grub_efi_loongarch64_reset_start);
-}
-
-static void
-grub_efi_loongarch64_init_smbios (grub_efi_loongarch64_smbios_table *smbios_table)
-{
-  grub_efi_loongarch64_smbios_table *dst = &loongson_boot_params->boot_params.efi.smbios;
-
-  dst->vers = smbios_table->vers;
-  dst->vga_bios = smbios_table->vga_bios;
-}
-
-static void
-grub_efi_loongarch64_init_cpu_info (grub_efi_loongarch64_smbios_table *smbios_table)
-{
-  grub_efi_loongarch64_cpu_info *src = (void *) smbios_table->lp.cpu_offset;
-  grub_efi_loongarch64_cpu_info *dst = &loongson_boot_params->cpu_info;
-
-  if (!src)
-    return;
-
-  grub_memcpy (dst, src, sizeof (grub_efi_loongarch64_cpu_info));
-  loongson_params->cpu_offset = (grub_uint64_t) dst - (grub_uint64_t) loongson_params;
-}
-
-static void
-grub_efi_loongarch64_init_system_info (grub_efi_loongarch64_smbios_table *smbios_table)
-{
-  grub_efi_loongarch64_system_info *src = (void *) smbios_table->lp.system_offset;
-  grub_efi_loongarch64_system_info *dst = &loongson_boot_params->system_info;
-
-  if (!src)
-    return;
-
-  grub_memcpy (dst, src, sizeof (grub_efi_loongarch64_system_info));
-  loongson_params->system_offset = (grub_uint64_t) dst - (grub_uint64_t) loongson_params;
-}
-
-static void
-grub_efi_loongarch64_init_irq_src_routing_table (grub_efi_loongarch64_smbios_table *smbios_table)
-{
-  grub_efi_loongarch64_irq_src_routing_table *src = (void *) smbios_table->lp.irq_offset;
-  grub_efi_loongarch64_irq_src_routing_table *dst = &loongson_boot_params->irq_src_routing_table;
-
-  if (!src)
-    return;
-
-  grub_memcpy (dst, src, sizeof (grub_efi_loongarch64_irq_src_routing_table));
-  loongson_params->irq_offset = (grub_uint64_t) dst - (grub_uint64_t) loongson_params;
-}
-
-static void
-grub_efi_loongarch64_init_interface_info (grub_efi_loongarch64_smbios_table *smbios_table)
-{
-  grub_efi_loongarch64_interface_info *src = (void *) smbios_table->lp.interface_offset;
-  grub_efi_loongarch64_interface_info *dst = &loongson_boot_params->interface_info;
-
-  if (!src)
-    return;
-
-  grub_memcpy (dst, src, sizeof (grub_efi_loongarch64_interface_info));
-  loongson_params->interface_offset = (grub_uint64_t) dst - (grub_uint64_t) loongson_params;
-}
-
-static void
-grub_efi_loongarch64_init_special_attribute (grub_efi_loongarch64_smbios_table *smbios_table)
-{
-  grub_efi_loongarch64_special_attribute *src = (void *) smbios_table->lp.special_offset;
-  grub_efi_loongarch64_special_attribute *dst = &loongson_boot_params->special_attribute;
-
-  if (!src)
-    return;
-
-  grub_memcpy (dst, src, sizeof (grub_efi_loongarch64_special_attribute));
-  loongson_params->special_offset = (grub_uint64_t) dst - (grub_uint64_t) loongson_params;
-}
-
-static void
-grub_efi_loongarch64_init_board_devices (grub_efi_loongarch64_smbios_table *smbios_table)
-{
-  grub_efi_loongarch64_board_devices *src = (void *) smbios_table->lp.boarddev_table_offset;
-  grub_efi_loongarch64_board_devices *dst = &loongson_boot_params->board_devices;
-
-  if (!src)
-    return;
-
-  grub_memcpy (dst, src, sizeof (grub_efi_loongarch64_board_devices));
-  loongson_params->boarddev_table_offset = (grub_uint64_t) dst - (grub_uint64_t) loongson_params;
-}
-
-#define ADD_MEMORY_DESCRIPTOR(desc, size)	\
-  ((grub_efi_memory_descriptor_t *) ((char *) (desc) + (size)))
-
-static void
-grub_efi_loongarch64_init_memory_map (grub_efi_loongarch64_smbios_table *smbios_table,
-                                   grub_efi_memory_descriptor_t *mmap_buf,
-                                   grub_efi_uintn_t mmap_size,
-                                   grub_efi_uintn_t desc_size)
-{
-  grub_efi_loongarch64_memory_map *src = (void *) smbios_table->lp.memory_offset;
-  grub_efi_loongarch64_memory_map *dst = &loongson_boot_params->memory_map;
-  grub_efi_memory_descriptor_t *mmap_end;
-  grub_efi_memory_descriptor_t *desc;
-  grub_efi_memory_descriptor_t *desc_next;
-  grub_efi_uint32_t mem_types_reserved[] =
-    {
-      1, // GRUB_EFI_RESERVED_MEMORY_TYPE
-      0, // GRUB_EFI_LOADER_CODE
-      0, // GRUB_EFI_LOADER_DATA
-      0, // GRUB_EFI_BOOT_SERVICES_CODE
-      0, // GRUB_EFI_BOOT_SERVICES_DATA
-      1, // GRUB_EFI_RUNTIME_SERVICES_CODE
-      1, // GRUB_EFI_RUNTIME_SERVICES_DATA
-      0, // GRUB_EFI_CONVENTIONAL_MEMORY
-      1, // GRUB_EFI_UNUSABLE_MEMORY
-      0, // GRUB_EFI_ACPI_RECLAIM_MEMORY
-      0, // GRUB_EFI_ACPI_MEMORY_NVS
-      1, // GRUB_EFI_MEMORY_MAPPED_IO
-      1, // GRUB_EFI_MEMORY_MAPPED_IO_PORT_SPACE
-      1, // GRUB_EFI_PAL_CODE
-      1, // GRUB_EFI_PERSISTENT_MEMORY
-    };
-  grub_uint32_t need_sort = 1;
-
-  if (!src)
-    return;
-
-  dst->vers = src->vers;
-  dst->nr_map = 0;
-  dst->mem_freq = src->mem_freq;
-  loongson_params->memory_offset = (grub_uint64_t) dst - (grub_uint64_t) loongson_params;
-
-  if (!mmap_buf || !mmap_size || !desc_size)
-    return;
-
-  mmap_end = ADD_MEMORY_DESCRIPTOR (mmap_buf, mmap_size);
-
-  /* drop reserved */
-  for (desc = mmap_buf,
-       desc_next = desc;
-       desc < mmap_end;
-       desc = ADD_MEMORY_DESCRIPTOR (desc, desc_size))
-    {
-      desc->type = mem_types_reserved[desc->type];
-      if (desc->type)
-        continue;
-
-      if (desc != desc_next)
-        *desc_next = *desc;
-      desc_next = ADD_MEMORY_DESCRIPTOR (desc_next, desc_size);
-    }
-  mmap_end = desc_next;
-
-  /* sort: low->high */
-  while (need_sort)
-    {
-      need_sort = 0;
-
-      for (desc = mmap_buf,
-           desc_next = ADD_MEMORY_DESCRIPTOR (desc, desc_size);
-           (desc < mmap_end) && (desc_next < mmap_end);
-           desc = desc_next,
-           desc_next = ADD_MEMORY_DESCRIPTOR (desc, desc_size))
-        {
-          grub_efi_memory_descriptor_t tmp;
-
-          if (desc->physical_start <= desc_next->physical_start)
-            continue;
-
-          tmp = *desc;
-          *desc = *desc_next;
-          *desc_next = tmp;
-          need_sort = 1;
-        }
-    }
-
-  /* combine continuous memory map */
-  for (desc = mmap_buf,
-       desc_next = ADD_MEMORY_DESCRIPTOR (desc, desc_size);
-       desc_next < mmap_end;
-       desc_next = ADD_MEMORY_DESCRIPTOR (desc_next, desc_size))
-    {
-      grub_efi_physical_address_t prev_end = desc->physical_start + (desc->num_pages << 12);
-
-      if (prev_end == desc_next->physical_start)
-        {
-          desc->num_pages += desc_next->num_pages;
-          continue;
-        }
-
-      desc = ADD_MEMORY_DESCRIPTOR (desc, desc_size);
-      grub_memcpy (desc, desc_next, desc_size);
-    }
-  mmap_end = ADD_MEMORY_DESCRIPTOR (desc, desc_size);
-
-  /* write to loongson memory map */
-  for (desc = mmap_buf;
-       desc < mmap_end;
-       desc = ADD_MEMORY_DESCRIPTOR (desc, desc_size))
-    {
-      grub_efi_physical_address_t physical_start = grub_vtop ((void *) desc->physical_start);
-      grub_efi_physical_address_t physical_end = physical_start + (desc->num_pages << 12);
-
-      physical_start = ALIGN_UP (physical_start, 0x100000);
-      physical_end = ALIGN_DOWN (physical_end, 0x100000);
-
-      if (physical_start >= physical_end || (physical_end - physical_start) < 0x100000)
-        continue;
-
-      dst->map[dst->nr_map].node_id = (desc->physical_start >> 44) & 0xf;
-      dst->map[dst->nr_map].mem_type = GRUB_EFI_LOONGSON_SYSTEM_RAM;
-      dst->map[dst->nr_map].mem_start = physical_start;
-      dst->map[dst->nr_map].mem_size = (physical_end - physical_start) >> 20;
-
-      grub_dprintf ("loongson", "memory map %03u: 0x%016lx 0x%016lx @ %u\n",
-                    dst->nr_map, physical_start, physical_end - physical_start,
-                    dst->map[dst->nr_map].node_id);
-
-      dst->nr_map ++;
-    }
-}
-
-#define BYTES_TO_PAGES(bytes)	(((bytes) + 0xfff) >> 12)
-#define SUB_MEMORY_DESCRIPTOR(desc, size)	\
-  ((grub_efi_memory_descriptor_t *) ((char *) (desc) - (size)))
-
-void
-grub_efi_loongarch64_alloc_boot_params (void)
-{
-  grub_efi_memory_descriptor_t *mmap_buf;
-  grub_efi_memory_descriptor_t *mmap_end;
-  grub_efi_memory_descriptor_t *desc;
-  grub_efi_uintn_t mmap_size;
-  grub_efi_uintn_t desc_size;
-  grub_efi_physical_address_t address;
-  grub_efi_allocate_type_t type;
-  grub_efi_uintn_t pages;
-  grub_efi_status_t status;
-  grub_efi_boot_services_t *b;
-  int mm_status;
-
-  type = GRUB_EFI_ALLOCATE_ADDRESS;
-  pages = BYTES_TO_PAGES (loongson_boot_params_size + loongson_reset_code_size);
-
-  mmap_size = (1 << 12);
-  mmap_buf = grub_malloc (mmap_size);
-  if (!mmap_buf)
-    grub_fatal ("out of memory!");
-
-  mm_status = grub_efi_get_memory_map (&mmap_size, mmap_buf, 0, &desc_size, 0);
-  if (mm_status == 0)
-    {
-      grub_free (mmap_buf);
-      mmap_size += desc_size * 32;
-
-      mmap_buf = grub_malloc (mmap_size);
-      if (!mmap_buf)
-        grub_fatal ("out of memory!");
-
-      mm_status = grub_efi_get_memory_map (&mmap_size, mmap_buf, 0, &desc_size, 0);
-    }
-
-  if (mm_status < 0)
-    grub_fatal ("cannot get memory map!");
-
-  mmap_end = ADD_MEMORY_DESCRIPTOR (mmap_buf, mmap_size);
-
-  for (desc = SUB_MEMORY_DESCRIPTOR (mmap_end, desc_size);
-       desc >= mmap_buf;
-       desc = SUB_MEMORY_DESCRIPTOR (desc, desc_size))
-    {
-      if (desc->type != GRUB_EFI_CONVENTIONAL_MEMORY)
-        continue;
-      if (desc->physical_start >= GRUB_EFI_MAX_USABLE_ADDRESS)
-        continue;
-      if (desc->num_pages < pages)
-        continue;
-
-      address = desc->physical_start;
-      break;
-    }
-
-  grub_free (mmap_buf);
-
-  b = grub_efi_system_table->boot_services;
-  status = efi_call_4 (b->allocate_pages, type, GRUB_EFI_RUNTIME_SERVICES_DATA, pages, &address);
-  if (status != GRUB_EFI_SUCCESS)
-    grub_fatal ("cannot allocate Loongson boot parameters!");
-
-  loongson_boot_params = (void *) ((grub_addr_t) address);
-}
-
-void
-grub_efi_loongarch64_free_boot_params (void)
-{
-  grub_efi_free_pages ((grub_addr_t) loongson_boot_params,
-                       BYTES_TO_PAGES (loongson_boot_params_size + loongson_reset_code_size));
-}
-
-void *
+static void *
 grub_efi_loongarch64_get_smbios_table (void)
 {
-  static grub_efi_loongarch64_smbios_table *smbios_table;
-  grub_efi_loongarch64_boot_params *old_boot_params;
   struct bootparamsinterface* boot_params;
   void * tmp_boot_params = NULL;
   char * p = NULL;
-  if(smbios_table)
-    return smbios_table;
 
   tmp_boot_params = grub_efi_loongarch64_get_boot_params();
   if(tmp_boot_params == NULL)
   {
     grub_dprintf("loongson", "tmp_boot_params is NULL\n");
-    return tmp_boot_params;
+    return NULL;
   }
 
   boot_params = (struct bootparamsinterface *)tmp_boot_params;
   p = (char *)&(boot_params->signature);
-  if(grub_strncmp(p, "BPI", 3) == 0)
+  if( grub_strncmp(p, "BPI", 3) == 0)
   {
     grub_dprintf("loongson", "find new bpi\n");
-    return boot_params ? boot_params : 0;
+    return boot_params ? boot_params : NULL;
   }
-  else
-  {
-    old_boot_params = (grub_efi_loongarch64_boot_params *)tmp_boot_params;
-    /*
-    {
-    	grub_dprintf("loongson", "smbios addr%llx\n", &old_boot_params->efi.smbios);
-    	grub_dprintf("loongson", "smbios vers%d\n", (grub_uint16_t)(&old_boot_params->efi.smbios.vers));
-    	grub_dprintf("loongson", "smbios vga_bios%d\n", &old_boot_params->efi.smbios.vga_bios);
-    	grub_dprintf("loongson", "lp memory offset %llx\n", &old_boot_params->efi.smbios.lp.memory_offset);
-    	grub_dprintf("loongson", "lp cpu offset %llx\n", &old_boot_params->efi.smbios.lp.cpu_offset);
-    	grub_dprintf("loongson", "lp system offset %llx\n", &old_boot_params->efi.smbios.lp.system_offset);
-    	grub_dprintf("loongson", "lp irq offset %llx\n", &old_boot_params->efi.smbios.lp.irq_offset);
-    	grub_dprintf("loongson", "lp interface offset %llx\n", &old_boot_params->efi.smbios.p.interface_offset);
-    	grub_dprintf("loongson", "lp special offset %llx\n", &old_boot_params->efi.smbios.lp.special_offset);
-    	grub_dprintf("loongson", "lp boarddev table offset %llx\n", &old_boot_params->efi.smbios.lp.boarddev_table_offset);
-    }
-    */
-    return old_boot_params ? &old_boot_params->efi.smbios : 0;
-  }
-
+  return tmp_boot_params;
 }
 
 int
@@ -462,7 +96,7 @@ grub_efi_loongarch64_grub_calculatechecksum8 (const grub_uint8_t *buffer, grub_e
 {
   grub_uint8_t checksum;
 
-  checksum = grub_efi_loongarch64_calculatesum8(buffer, length);
+  checksum = grub_efi_loongarch64_calculatesum8 (buffer, length);
 
   return (grub_uint8_t) (0x100 - checksum);
 }
@@ -491,7 +125,7 @@ grub_efi_loongarch64_memmap_sort(struct memmap array[], grub_uint32_t length, me
    bpmem->map[index].memtype = memtype;
    bpmem->map[index].memstart = array[j].memstart;
    bpmem->map[index].memsize = tempmemsize;
-   grub_dprintf("loongson", "map[%d]:type %x, start 0x%llx, end 0x%llx\n",
+   grub_dprintf("loongson", "map[%d]:type %x, start 0x%lx, end 0x%lx\n",
 		   index,
 		   bpmem->map[index].memtype,
 		   bpmem->map[index].memstart,
