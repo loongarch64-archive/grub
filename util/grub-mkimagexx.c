@@ -1133,167 +1133,173 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 		 sym_addr += addend;
 		 switch (ELF_R_TYPE (info))
 		   {
-			case R_LARCH_64:
-				{
-				*target=(grub_uint64_t)sym_addr;
-				}
-				break;
-			case R_LARCH_MARK_LA:
-				{
-				la_abs=1;
-				}
-				break;
-			case R_LARCH_SOP_PUSH_PCREL:
-				{
-				opri++;
-				oprs[opri]=(grub_uint64_t)(sym_addr-(target_section_addr+offset+image_target->vaddr_offset));
-				}
-				break;
-			case R_LARCH_SOP_PUSH_ABSOLUTE:
-				{
-				opri++;
-				oprs[opri]=(grub_uint64_t)sym_addr;
-				}
-				break;
-			case R_LARCH_SOP_PUSH_PLT_PCREL:
-				{
-				opri++;
-				oprs[opri]=(grub_uint64_t)(sym_addr-(target_section_addr+offset+image_target->vaddr_offset));
-				}
-				break;
-			case R_LARCH_SOP_SUB:
-				{
-				grub_uint64_t opr2=oprs[opri];
-				opri--;
-				grub_uint64_t opr1=oprs[opri];
-				opri--;
-				opri++;
-				oprs[opri]=opr1 - opr2;
-				}
-				break;
-			case R_LARCH_SOP_SL:
-				{
-				grub_uint64_t opr2=oprs[opri];
-				opri--;
-				grub_uint64_t opr1=oprs[opri];
-				opri--;
-				opri++;
-				oprs[opri]=opr1 << opr2;
-				}
-				break;
-			case R_LARCH_SOP_SR:
-				{
-				grub_uint64_t opr2=oprs[opri];
-				opri--;
-				grub_uint64_t opr1=oprs[opri];
-				opri--;
-				opri++;
-				oprs[opri]=opr1 >> opr2;
-				}
-				break;
-			case R_LARCH_SOP_ADD:
-				{
-				grub_uint64_t opr2=oprs[opri];
-				opri--;
-				grub_uint64_t opr1=oprs[opri];
-				opri--;
-				opri++;
-				oprs[opri]=opr1 + opr2;
-				}
-				break;
-			case R_LARCH_SOP_AND:
-				{
-				grub_uint64_t opr2=oprs[opri];
-				opri--;
-				grub_uint64_t opr1=oprs[opri];
-				opri--;
-				opri++;
-				oprs[opri]=opr1 & opr2;
-				}
-				break;
-			case R_LARCH_SOP_IF_ELSE:
-				{
-				grub_uint64_t opr3=oprs[opri];
-				opri--;
-				grub_uint64_t opr2=oprs[opri];
-				opri--;
-				grub_uint64_t opr1=oprs[opri];
-				opri--;
-				if(opr1){
-					opri++;
-					oprs[opri]=opr2;
-				} else {
-					opri++;
-					oprs[opri]=opr3;
-				}
-				}
-				break;
-			case R_LARCH_SOP_POP_32_S_10_5:
-				{
-				grub_uint64_t opr1 = oprs[opri];
-				opri--;
-				*target=(*target) | ((opr1 & 0x1f) << 10);
-				}
-				break;
-			case R_LARCH_SOP_POP_32_U_10_12:
-				{
-				grub_uint64_t opr1 = oprs[opri];
-				opri--;
-				*target=(*target) | ((opr1 & 0xfff) << 10);
-				}
-				break;
-			case R_LARCH_SOP_POP_32_S_10_12:
-				{
-				if(la_abs==1)
-					la_abs=0;
-				grub_uint64_t opr1 = oprs[opri];
-				opri--;
-				*target = (*target) | ((opr1 & 0xfff) << 10);
-				}
-				break;
-			case R_LARCH_SOP_POP_32_S_10_16:
-				{
-				grub_uint64_t opr1 = oprs[opri];
-				opri--;
-				*target = (*target) | ((opr1 & 0xffff) << 10);
-				}
-				break;
-			case R_LARCH_SOP_POP_32_S_10_16_S2:
-				{
-				grub_uint64_t opr1 = oprs[opri];
-				opri--;
-				*target = (*target) | (((opr1 >> 2) & 0xffff) << 10);
-				}
-				break;
-			case R_LARCH_SOP_POP_32_S_5_20:
-				{
-				grub_uint64_t opr1 = oprs[opri];
-				opri--;
-				*target = (*target) | ((opr1 & 0xfffff)<<5)	;
-				}
-				break;
-			case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
-				{
-				grub_uint64_t opr1 = oprs[opri];
-				opri--;
-				*target =(*target) | (((opr1 >> 2) & 0xffff) << 10);
-				*target =(*target) | ((opr1 >> 18) & 0x1f);
-				}
-				break;
-			case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
-				{
-				grub_uint64_t opr1 = oprs[opri];
-				opri--;
-				*target =(*target) | (((opr1 >> 2) & 0xffff) << 10);
-				*target =(*target) | ((opr1 >> 18) & 0x3ff);
-				}
-				break;
+		   case R_LARCH_64:
+		     {
+		       *target = grub_host_to_target64 (grub_target_to_host64 (*target) + sym_addr);
+		     }
+		     break;
+		   case R_LARCH_MARK_LA:
+		     {
+		       la_abs=1;
+		     }
+		     break;
+		   case R_LARCH_SOP_PUSH_PCREL:
+		     {
+		       opri++;
+		       oprs[opri]=(grub_uint64_t)(sym_addr
+						  -(target_section_addr
+						    +offset
+						    +image_target->vaddr_offset));
+		     }
+		     break;
+		   case R_LARCH_SOP_PUSH_ABSOLUTE:
+		     {
+		       opri++;
+		       oprs[opri]=(grub_uint64_t)sym_addr;
+		     }
+		     break;
+		   case R_LARCH_SOP_PUSH_PLT_PCREL:
+		     {
+		       opri++;
+		       oprs[opri]=(grub_uint64_t)(sym_addr
+						  -(target_section_addr
+						    +offset
+						    +image_target->vaddr_offset));
+		     }
+		     break;
+		   case R_LARCH_SOP_SUB:
+		     {
+		       grub_uint64_t opr2=oprs[opri];
+		       opri--;
+		       grub_uint64_t opr1=oprs[opri];
+		       opri--;
+		       opri++;
+		       oprs[opri]=opr1 - opr2;
+		     }
+		     break;
+		   case R_LARCH_SOP_SL:
+		     {
+		       grub_uint64_t opr2=oprs[opri];
+		       opri--;
+		       grub_uint64_t opr1=oprs[opri];
+		       opri--;
+		       opri++;
+		       oprs[opri]=opr1 << opr2;
+		     }
+		    break;
+		   case R_LARCH_SOP_SR:
+		     {
+		       grub_uint64_t opr2=oprs[opri];
+		       opri--;
+		       grub_uint64_t opr1=oprs[opri];
+		       opri--;
+		       opri++;
+		       oprs[opri]=opr1 >> opr2;
+		     }
+		     break;
+		   case R_LARCH_SOP_ADD:
+		     {
+		       grub_uint64_t opr2=oprs[opri];
+		       opri--;
+		       grub_uint64_t opr1=oprs[opri];
+		       opri--;
+		       opri++;
+		       oprs[opri]=opr1 + opr2;
+		     }
+		     break;
+		   case R_LARCH_SOP_AND:
+		     {
+		       grub_uint64_t opr2=oprs[opri];
+		       opri--;
+		       grub_uint64_t opr1=oprs[opri];
+		       opri--;
+		       opri++;
+		       oprs[opri]=opr1 & opr2;
+		     }
+		     break;
+		   case R_LARCH_SOP_IF_ELSE:
+		     {
+		       grub_uint64_t opr3=oprs[opri];
+		       opri--;
+		       grub_uint64_t opr2=oprs[opri];
+		       opri--;
+		       grub_uint64_t opr1=oprs[opri];
+		       opri--;
+		       if(opr1){
+			   opri++;
+			   oprs[opri]=opr2;
+		       } else {
+			   opri++;
+			   oprs[opri]=opr3;
+		       }
+		     }
+		     break;
+		   case R_LARCH_SOP_POP_32_S_10_5:
+		     {
+		       grub_uint64_t opr1 = oprs[opri];
+		       opri--;
+		       *target=(*target) | ((opr1 & 0x1f) << 10);
+		     }
+		     break;
+		   case R_LARCH_SOP_POP_32_U_10_12:
+		     {
+		       grub_uint64_t opr1 = oprs[opri];
+		       opri--;
+		       *target=(*target) | ((opr1 & 0xfff) << 10);
+		     }
+		     break;
+		   case R_LARCH_SOP_POP_32_S_10_12:
+		     {
+		       if(la_abs==1)
+			 la_abs=0;
+		       grub_uint64_t opr1 = oprs[opri];
+		       opri--;
+		       *target = (*target) | ((opr1 & 0xfff) << 10);
+		     }
+		     break;
+		   case R_LARCH_SOP_POP_32_S_10_16:
+		     {
+		       grub_uint64_t opr1 = oprs[opri];
+		       opri--;
+		       *target = (*target) | ((opr1 & 0xffff) << 10);
+		     }
+		     break;
+		   case R_LARCH_SOP_POP_32_S_10_16_S2:
+		     {
+		       grub_uint64_t opr1 = oprs[opri];
+		       opri--;
+		       *target = (*target) | (((opr1 >> 2) & 0xffff) << 10);
+		     }
+		     break;
+		   case R_LARCH_SOP_POP_32_S_5_20:
+		     {
+		       grub_uint64_t opr1 = oprs[opri];
+		       opri--;
+		       *target = (*target) | ((opr1 & 0xfffff)<<5)	;
+		     }
+		     break;
+		   case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
+		     {
+		       grub_uint64_t opr1 = oprs[opri];
+		       opri--;
+		       *target =(*target) | (((opr1 >> 2) & 0xffff) << 10);
+		       *target =(*target) | ((opr1 >> 18) & 0x1f);
+		     }
+		     break;
+		   case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
+		     {
+		       grub_uint64_t opr1 = oprs[opri];
+		       opri--;
+		       *target =(*target) | (((opr1 >> 2) & 0xffff) << 10);
+		       *target =(*target) | ((opr1 >> 18) & 0x3ff);
+		     }
+		     break;
 		   default:
 		     grub_util_error (_("relocation 0x%x is not implemented yet"),
 				      (unsigned int) ELF_R_TYPE (info));
 		     break;
 		   }
-	       break;
+		 break;
 	       }
 #endif
 #if defined(MKIMAGE_ELF32)
