@@ -66,7 +66,7 @@ kernel = {
   arm64_efi_stripflags       = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version -R .eh_frame';
 
   loongarch64_efi_ldflags      = '-Wl,-r,-d';
-  loongarch64_efi_stripflags   = '--strip-unneeded -K start -R .eh_frame';
+  loongarch64_efi_stripflags   = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version -R .eh_frame';
 
   riscv32_efi_ldflags      = '-Wl,-r,-d';
   riscv32_efi_stripflags   = '--strip-unneeded -K start -R .note -R .comment -R .note.gnu.gold-version -R .eh_frame';
