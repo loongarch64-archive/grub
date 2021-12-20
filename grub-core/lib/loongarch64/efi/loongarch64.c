@@ -461,13 +461,12 @@ grub_efi_loongarch64_grub_calculatechecksum8 (const grub_uint8_t *buffer, grub_e
 {
   grub_uint8_t checksum;
 
-  checksum = grub_efi_loongarch64_calculatesum8(buffer, length);
+  checksum = grub_efi_loongarch64_calculatesum8 (buffer, length);
 
   return (grub_uint8_t) (0x100 - checksum);
 }
 
-
-grub_uint32_t 
+grub_uint32_t
 grub_efi_loongarch64_memmap_sort(struct memmap array[], grub_uint32_t length, mem_map * bpmem, grub_uint32_t index, grub_uint32_t memtype)
 {
   grub_uint64_t tempmemsize = 0;
@@ -479,12 +478,12 @@ grub_efi_loongarch64_memmap_sort(struct memmap array[], grub_uint32_t length, me
     tempmemsize = array[j].memsize;
     for(t = j + 1; t < length; t++)
     {
-      if(array[j].memstart + tempmemsize == array[t].memstart) 
+      if(array[j].memstart + tempmemsize == array[t].memstart)
       {
         tempmemsize += array[t].memsize;
       }
       else
-      {            
+      {
         break;
       }
    }
@@ -502,4 +501,3 @@ grub_efi_loongarch64_memmap_sort(struct memmap array[], grub_uint32_t length, me
   }
   return index;
 }
-

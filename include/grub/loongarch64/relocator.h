@@ -33,4 +33,4 @@ grub_err_t
 grub_relocator64_boot (struct grub_relocator *rel,
 		       struct grub_relocator64_state state);
 
-#endif 
+#endif

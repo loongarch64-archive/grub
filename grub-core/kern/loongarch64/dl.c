@@ -178,8 +178,8 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	      {
 	    	opri++;
 	    	oprs[opri]=opr2;
-	      } 
-	    else 
+	      }
+	    else
 	      {
 	    	opri++;
 	    	oprs[opri]=opr3;

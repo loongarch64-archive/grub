@@ -47,4 +47,3 @@ copycont2:
 	bne $r10, $r0, copycont2
 
 VARIABLE (grub_relocator_backward_end)
-
