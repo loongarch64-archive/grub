@@ -115,7 +115,6 @@ case "$target_cpu" in
 		;;
   loongarch64)
 		target_cpu=loongarch64
-		machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_CPU_LOONGARCH64=1"
 		;;
   riscv32*)
 		target_cpu=riscv32
@@ -252,7 +251,6 @@ case "$platform" in
   pc)		machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_MACHINE_PCBIOS=1" ;;
   emu)		machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_MACHINE_EMU=1" ;;
   loongson)	machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_MACHINE_MIPS_LOONGSON=1" ;;
-  loongarch64)	machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_MACHINE_LOONARCH64=1" ;;
   qemu_mips)	machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_MACHINE_MIPS_QEMU_MIPS=1" ;;
   arc)	machine_CPPFLAGS="$machine_CPPFLAGS -DGRUB_MACHINE_ARC=1" ;;
 esac
