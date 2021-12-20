@@ -29,4 +29,4 @@ grub_efi_max_usable_address(void)
 
 #define GRUB_EFI_MAX_USABLE_ADDRESS grub_efi_max_usable_address()
 
-#endif
+#endif /* ! GRUB_MEMORY_CPU_HEADER */
