@@ -323,7 +323,6 @@ kernel = {
 
   loongarch64_efi = kern/loongarch64/efi/init.c;
   loongarch64_efi = lib/loongarch64/efi/loongarch64.c;
-  loongarch64_efi = lib/loongarch64/efi/loongarch64_asm.S;
 
   powerpc_ieee1275 = kern/powerpc/cache.S;
   powerpc_ieee1275 = kern/powerpc/dl.c;
