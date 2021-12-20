@@ -844,10 +844,10 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 	    offset = grub_target_to_host (r->r_offset);
 	    target = SUFFIX (get_target_address) (e, target_section,
 						  offset, image_target);
-
 	    info = grub_target_to_host (r->r_info);
 	    sym_addr = SUFFIX (get_symbol_address) (e, smd->symtab,
 						    ELF_R_SYM (info), image_target);
+
             addend = (s->sh_type == grub_target_to_host32 (SHT_RELA)) ?
 	      grub_target_to_host (r->r_addend) : 0;
 
@@ -1679,8 +1679,7 @@ add_fixup_entry (struct fixup_block_list **cblock, grub_uint16_t type,
 
 	  /* The spec does not mention the requirement of a Page RVA.
 	     Here, align the address with a 4K boundary for safety.  */
-	  if (type)
-	    b->page_rva = (addr & ~(0x1000 - 1));
+	  b->page_rva = (addr & ~(0x1000 - 1));
 	  b->block_size = sizeof (*b);
 	}
 
@@ -1736,8 +1735,6 @@ static void
 translate_relocation_pe (struct translate_context *ctx,
 			 Elf_Addr addr,
 			 Elf_Addr info,
-			 Elf_Addr sym_addr,
-			 Elf_Addr addend,
 			 const struct grub_install_image_target_desc *image_target)
 {
   /* Necessary to relocate only absolute addresses.  */
@@ -2052,12 +2049,10 @@ static void
 translate_relocation (struct translate_context *ctx,
 		      Elf_Addr addr,
 		      Elf_Addr info,
-		      Elf_Addr sym_addr,
-		      Elf_Addr addend,
 		      const struct grub_install_image_target_desc *image_target)
 {
   if (image_target->id == IMAGE_EFI)
-    translate_relocation_pe (ctx, addr, info, sym_addr, addend, image_target);
+    translate_relocation_pe (ctx, addr, info, image_target);
   else
     translate_relocation_raw (ctx, addr, info, image_target);
 }
@@ -2198,17 +2193,11 @@ make_reloc_section (Elf_Ehdr *e, struct grub_mkimage_layout *layout,
     if ((grub_target_to_host32 (s->sh_type) == SHT_REL) ||
         (grub_target_to_host32 (s->sh_type) == SHT_RELA))
       {
-	Elf_Rela *r;
+	Elf_Rel *r;
 	Elf_Word rtab_size, r_size, num_rs;
 	Elf_Off rtab_offset;
-	Elf_Shdr *symtab_section;
 	Elf_Addr section_address;
 	Elf_Word j;
-
-	symtab_section = (Elf_Shdr *) ((char *) smd->sections
-					+ (grub_target_to_host32 (s->sh_link)
-						* smd->section_entsize));
-
 
 	if (!SUFFIX (is_kept_reloc_section) (s, image_target, smd))
 	  {
@@ -2227,30 +2216,20 @@ make_reloc_section (Elf_Ehdr *e, struct grub_mkimage_layout *layout,
 
 	section_address = smd->vaddrs[grub_le_to_cpu32 (s->sh_info)];
 
-	for (j = 0, r = (Elf_Rela *) ((char *) e + rtab_offset);
+	for (j = 0, r = (Elf_Rel *) ((char *) e + rtab_offset);
 	     j < num_rs;
-	     j++, r = (Elf_Rela *) ((char *) r + r_size))
+	     j++, r = (Elf_Rel *) ((char *) r + r_size))
 	  {
 	    Elf_Addr info;
 	    Elf_Addr offset;
 	    Elf_Addr addr;
-	    Elf_Addr sym_addr;
-	    Elf_Addr addend;
 
 	    offset = grub_target_to_host (r->r_offset);
-	    if (image_target->elf_target == EM_MIPS && image_target->voidp_sizeof == 8)
-	      info = ((grub_uint64_t) r->r_info << 32) |
-		      (grub_uint32_t) grub_be_to_cpu64 (r->r_info);
-	    else
-	      info = grub_target_to_host (r->r_info);
+	    info = grub_target_to_host (r->r_info);
 
-	    sym_addr = SUFFIX (get_symbol_address) (e, symtab_section,
-						    ELF_R_SYM (info), image_target);
-	    addend = (s->sh_type == grub_target_to_host32 (SHT_RELA)) ?
-		grub_target_to_host (r->r_addend) : 0;
 	    addr = section_address + offset;
 
-	    translate_relocation (&ctx, addr, info, sym_addr, addend, image_target);
+	    translate_relocation (&ctx, addr, info, image_target);
 	  }
       }
 
