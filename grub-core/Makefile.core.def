@@ -923,7 +923,6 @@ module = {
   xen = lib/xen/halt.c;
   i386_xen_pvh = lib/xen/halt.c;
   efi = lib/efi/halt.c;
-  loongarch64_efi = commands/acpihalt.c;
   ieee1275 = lib/ieee1275/halt.c;
   emu = lib/emu/halt.c;
   uboot = lib/dummy/halt.c;
