@@ -490,11 +490,12 @@ grub_efi_loongarch64_memmap_sort(struct memmap array[], grub_uint32_t length, me
    bpmem->map[index].memtype = memtype;
    bpmem->map[index].memstart = array[j].memstart;
    bpmem->map[index].memsize = tempmemsize;
-   grub_dprintf("loongson", "map[%d]:type %x, start 0x%llx, end 0x%llx\n",
-		   index,
-		   bpmem->map[index].memtype,
-		   bpmem->map[index].memstart,
-		   bpmem->map[index].memstart+ bpmem->map[index].memsize
+   grub_dprintf("loongson", "map[%d]:type %"PRIuGRUB_UINT32_T", start 0x%"
+		PRIuGRUB_UINT64_T", end 0x%"PRIuGRUB_UINT64_T"\n",
+		index,
+		bpmem->map[index].memtype,
+		bpmem->map[index].memstart,
+		bpmem->map[index].memstart+ bpmem->map[index].memsize
 	       );
    j = t;
    index++;
