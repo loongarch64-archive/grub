@@ -36,7 +36,7 @@ grub_vtop (void *a)
 }
 
 static inline void *
-grub_map_memory (grub_phys_addr_t a, grub_size_t size)
+grub_map_memory (grub_phys_addr_t a, grub_size_t size __attribute__ ((unused)))
 {
   grub_uint64_t addr;
   asm volatile ("csrrd %0, 0x181" : "=r" (addr));
