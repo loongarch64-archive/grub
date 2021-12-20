@@ -250,7 +250,9 @@ grub_linux_boot (void)
         new_interface_mem->map[tmp_index].memtype = GRUB_EFI_LOONGSON_SYSTEM_RAM;
         new_interface_mem->map[tmp_index].memstart = free_mem[j].memstart;
         new_interface_mem->map[tmp_index].memsize = tempMemsize;
-        grub_dprintf("loongson", "map[%d]:type %x, start 0x%llx, end 0x%llx\n",
+        grub_dprintf("loongarch", "map[%d]:type %"PRIuGRUB_UINT32_T", "
+		     "start 0x%"PRIxGRUB_UINT64_T", "
+		     "end 0x%"PRIuGRUB_UINT64_T"\n",
                      tmp_index,
                      new_interface_mem->map[tmp_index].memtype,
                      new_interface_mem->map[tmp_index].memstart,
