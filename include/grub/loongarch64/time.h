@@ -19,18 +19,10 @@
 #ifndef KERNEL_CPU_TIME_HEADER
 #define KERNEL_CPU_TIME_HEADER	1
 
-#ifndef GRUB_UTIL
-
-#define GRUB_TICKS_PER_SECOND	(grub_arch_cpuclock / 2)
-
-void grub_timer_init (grub_uint32_t cpuclock);
-
-extern grub_uint32_t grub_arch_cpuclock;
-#endif
-
 static inline void
 grub_cpu_idle(void)
 {
+  __asm__ __volatile__("idle 0\n");
 }
 
 #endif
