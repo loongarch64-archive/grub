@@ -1859,7 +1859,7 @@ translate_relocation_pe (struct translate_context *ctx,
 		{
 		ctx->current_address = add_fixup_entry (
 		 &ctx->lst,
-		 GRUB_PE32_REL_BASED_LOONGARCH64,
+		 GRUB_PE32_REL_BASED_LOONGARCH64_MARK_LA,
 		 addr, 0, ctx->current_address,
 		 image_target);
 		}
