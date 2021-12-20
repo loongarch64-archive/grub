@@ -19,11 +19,13 @@
 #ifndef GRUB_TYPES_CPU_HEADER
 #define GRUB_TYPES_CPU_HEADER	1
 
+/* The size of void *.  */
 #define GRUB_TARGET_SIZEOF_VOID_P	8
+
+/* The size of long.  */
 #define GRUB_TARGET_SIZEOF_LONG		8
 
-#ifdef GRUB_CPU_LOONGARCH
+/* LoongArch is little-endian.  */
 #undef GRUB_TARGET_WORDS_BIGENDIAN
-#endif
 
-#endif
+#endif /* ! GRUB_TYPES_CPU_HEADER */

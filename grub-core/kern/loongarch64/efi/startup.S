@@ -22,8 +22,10 @@
 	.text
 
 	.align		4
-
 FUNCTION(_start)
+	/*
+	 *  EFI_SYSTEM_TABLE and EFI_HANDLE are passed in $a1/$a0.
+	 */
 	addi.d		$sp, $sp, -16
 	st.d		$ra, $sp, 0
 
