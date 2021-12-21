@@ -61,8 +61,6 @@
 #endif
 #endif
 
-#define RELOC_STACK_MAX 1024
-
 /* These structures are defined according to the CHRP binding to IEEE1275,
    "Client Program Format" section.  */
 
@@ -786,12 +784,13 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
   struct grub_ia64_trampoline *tr = (void *) (pe_target + tramp_off);
   grub_uint64_t *gpptr = (void *) (pe_target + got_off);
   unsigned unmatched_adr_got_page = 0;
-  grub_uint64_t oprs[RELOC_STACK_MAX]={0};
-  int opri=-1;
-  grub_uint32_t la_abs = 0;
 #define MASK19 ((1 << 19) - 1)
 #else
   grub_uint32_t *tr = (void *) (pe_target + tramp_off);
+#endif
+#ifdef (__loongarch__)
+  grub_stack_t* stack;
+  stack = grub_stack_new (16);
 #endif
 
   for (i = 0, s = smd->sections;
@@ -1134,165 +1133,59 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 		 switch (ELF_R_TYPE (info))
 		   {
 		   case R_LARCH_64:
-		     {
-		       *target = grub_host_to_target64 (grub_target_to_host64 (*target) + sym_addr);
-		     }
-		     break;
-		   case R_LARCH_MARK_LA:
-		     {
-		       la_abs=1;
-		     }
-		     break;
-		   case R_LARCH_SOP_PUSH_PCREL:
-		     {
-		       opri++;
-		       oprs[opri]=(grub_uint64_t)(sym_addr
-						  -(target_section_addr
-						    +offset
-						    +image_target->vaddr_offset));
-		     }
+		     *target = grub_host_to_target64 (grub_target_to_host64 (*target) + sym_addr);
 		     break;
 		   case R_LARCH_SOP_PUSH_ABSOLUTE:
-		     {
-		       opri++;
-		       oprs[opri]=(grub_uint64_t)sym_addr;
-		     }
+		     grub_loongarch64_sop_push (stack, sym_addr);
 		     break;
+		   case R_LARCH_SOP_PUSH_PCREL:
 		   case R_LARCH_SOP_PUSH_PLT_PCREL:
-		     {
-		       opri++;
-		       oprs[opri]=(grub_uint64_t)(sym_addr
-						  -(target_section_addr
-						    +offset
-						    +image_target->vaddr_offset));
-		     }
+		     grub_loongarch64_sop_push (stack, sym_addr
+						-(target_section_addr
+						  +offset
+						  +image_target->vaddr_offset));
 		     break;
 		   case R_LARCH_SOP_SUB:
-		     {
-		       grub_uint64_t opr2=oprs[opri];
-		       opri--;
-		       grub_uint64_t opr1=oprs[opri];
-		       opri--;
-		       opri++;
-		       oprs[opri]=opr1 - opr2;
-		     }
+		     grub_loongarch64_sop_sub	(stack);
 		     break;
 		   case R_LARCH_SOP_SL:
-		     {
-		       grub_uint64_t opr2=oprs[opri];
-		       opri--;
-		       grub_uint64_t opr1=oprs[opri];
-		       opri--;
-		       opri++;
-		       oprs[opri]=opr1 << opr2;
-		     }
+		     grub_loongarch64_sop_sl (stack);
 		    break;
 		   case R_LARCH_SOP_SR:
-		     {
-		       grub_uint64_t opr2=oprs[opri];
-		       opri--;
-		       grub_uint64_t opr1=oprs[opri];
-		       opri--;
-		       opri++;
-		       oprs[opri]=opr1 >> opr2;
-		     }
+		    grub_loongarch64_sop_sr (stack);
 		     break;
 		   case R_LARCH_SOP_ADD:
-		     {
-		       grub_uint64_t opr2=oprs[opri];
-		       opri--;
-		       grub_uint64_t opr1=oprs[opri];
-		       opri--;
-		       opri++;
-		       oprs[opri]=opr1 + opr2;
-		     }
+		     grub_loongarch64_sop_add (stack);
 		     break;
 		   case R_LARCH_SOP_AND:
-		     {
-		       grub_uint64_t opr2=oprs[opri];
-		       opri--;
-		       grub_uint64_t opr1=oprs[opri];
-		       opri--;
-		       opri++;
-		       oprs[opri]=opr1 & opr2;
-		     }
+		     grub_loongarch64_sop_and (stack);
 		     break;
 		   case R_LARCH_SOP_IF_ELSE:
-		     {
-		       grub_uint64_t opr3=oprs[opri];
-		       opri--;
-		       grub_uint64_t opr2=oprs[opri];
-		       opri--;
-		       grub_uint64_t opr1=oprs[opri];
-		       opri--;
-		       if(opr1){
-			   opri++;
-			   oprs[opri]=opr2;
-		       } else {
-			   opri++;
-			   oprs[opri]=opr3;
-		       }
-		     }
+		     grub_loongarch64_sop_if_else (stack);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_10_5:
-		     {
-		       grub_uint64_t opr1 = oprs[opri];
-		       opri--;
-		       *target=(*target) | ((opr1 & 0x1f) << 10);
-		     }
+		     grub_loongarch64_sop_32_s_10_5 (stack, *target);
 		     break;
 		   case R_LARCH_SOP_POP_32_U_10_12:
-		     {
-		       grub_uint64_t opr1 = oprs[opri];
-		       opri--;
-		       *target=(*target) | ((opr1 & 0xfff) << 10);
-		     }
+		     grub_loongarch64_sop_32_u_10_12 (stack, *target);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_10_12:
-		     {
-		       if(la_abs==1)
-			 la_abs=0;
-		       grub_uint64_t opr1 = oprs[opri];
-		       opri--;
-		       *target = (*target) | ((opr1 & 0xfff) << 10);
-		     }
+		     grub_loongarch64_sop_32_s_10_12 (stack, *target);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_10_16:
-		     {
-		       grub_uint64_t opr1 = oprs[opri];
-		       opri--;
-		       *target = (*target) | ((opr1 & 0xffff) << 10);
-		     }
+		     grub_loongarch64_sop_32_s_10_16 (stack, *target);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_10_16_S2:
-		     {
-		       grub_uint64_t opr1 = oprs[opri];
-		       opri--;
-		       *target = (*target) | (((opr1 >> 2) & 0xffff) << 10);
-		     }
+		     grub_loongarch64_sop_32_s_10_16_s2 (stack, *target);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_5_20:
-		     {
-		       grub_uint64_t opr1 = oprs[opri];
-		       opri--;
-		       *target = (*target) | ((opr1 & 0xfffff)<<5)	;
-		     }
+		     grub_loongarch64_sop_32_s_5_20 (stack, *target);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
-		     {
-		       grub_uint64_t opr1 = oprs[opri];
-		       opri--;
-		       *target =(*target) | (((opr1 >> 2) & 0xffff) << 10);
-		       *target =(*target) | ((opr1 >> 18) & 0x1f);
-		     }
+		     grub_loongarch64_sop_32_s_0_5_10_16_s2 (stack, *target);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
-		     {
-		       grub_uint64_t opr1 = oprs[opri];
-		       opri--;
-		       *target =(*target) | (((opr1 >> 2) & 0xffff) << 10);
-		       *target =(*target) | ((opr1 >> 18) & 0x3ff);
-		     }
+		     grub_loongarch64_sop_32_s_0_10_10_16_s2 (stack, *target);
 		     break;
 		   default:
 		     grub_util_error (_("relocation 0x%x is not implemented yet"),
@@ -1600,6 +1493,9 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 	     }
 	  }
       }
+#ifdef (__loongarch__)
+  stack = grub_stack_destroy (stack);
+#endif
 }
 
 /* Add a PE32's fixup entry for a relocation. Return the resulting address
