@@ -34,23 +34,13 @@ grub_arch_dl_check_header (void *ehdr)
 
   /* Check the magic numbers.  */
   if (e->e_ident[EI_CLASS] != ELFCLASS64
-      || e->e_ident[EI_DATA] != ELFDATA2LSB
-      || e->e_machine != EM_LOONGARCH)
+      || e->e_ident[EI_DATA] != ELFDATA2LSB || e->e_machine != EM_LOONGARCH)
     return grub_error (GRUB_ERR_BAD_OS, N_("invalid arch-dependent ELF magic"));
 
   return GRUB_ERR_NONE;
 }
 
 #pragma GCC diagnostic ignored "-Wcast-align"
-
-grub_err_t
-grub_arch_dl_get_tramp_got_size (const void *ehdr __attribute__ ((unused)),
-				 grub_size_t *tramp, grub_size_t *got)
-{
-  *tramp = 0;
-  *got = 0;
-  return GRUB_ERR_NONE;
-}
 
 /* Relocate symbols.  */
 grub_err_t
