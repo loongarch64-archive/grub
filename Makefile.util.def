@@ -1275,6 +1275,23 @@ program = {
 
 program = {
   testcase;
+  name = stack_test;
+  common = tests/stack_test.c;
+  common = tests/lib/unit_test.c;
+  common = grub-core/kern/list.c;
+  common = grub-core/kern/misc.c;
+  common = grub-core/tests/lib/test.c;
+  common = grub-core/lib/loongarch64/stack.c;
+  ldadd = libgrubmods.a;
+  ldadd = libgrubgcry.a;
+  ldadd = libgrubkern.a;
+  ldadd = grub-core/lib/gnulib/libgnu.a;
+  ldadd = '$(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
+  condition = COND_loongarch64;
+};
+
+program = {
+  testcase;
   name = cmp_test;
   common = tests/cmp_unit_test.c;
   common = tests/lib/unit_test.c;
