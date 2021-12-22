@@ -1135,9 +1135,6 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 		   case R_LARCH_64:
 		     *target = grub_host_to_target64 (grub_target_to_host64 (*target) + sym_addr);
 		     break;
-		   case R_LARCH_SOP_PUSH_ABSOLUTE:
-		     grub_loongarch64_sop_push (stack, sym_addr);
-		     break;
 		   case R_LARCH_SOP_PUSH_PCREL:
 		   case R_LARCH_SOP_PUSH_PLT_PCREL:
 		     grub_loongarch64_sop_push (stack, sym_addr
@@ -1145,8 +1142,11 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 						  +offset
 						  +image_target->vaddr_offset));
 		     break;
+		   case R_LARCH_SOP_PUSH_ABSOLUTE:
+		     grub_loongarch64_sop_push (stack, sym_addr);
+		     break;
 		   case R_LARCH_SOP_SUB:
-		     grub_loongarch64_sop_sub	(stack);
+		     grub_loongarch64_sop_sub (stack);
 		     break;
 		   case R_LARCH_SOP_SL:
 		     grub_loongarch64_sop_sl (stack);
@@ -1494,7 +1494,7 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 	  }
       }
 #ifdef (__loongarch__)
-  stack = grub_stack_destroy (stack);
+  grub_stack_destroy (stack);
 #endif
 }
 
