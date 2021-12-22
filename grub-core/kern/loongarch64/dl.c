@@ -58,7 +58,7 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
        rel = (Elf_Rel *) ((char *) rel + s->sh_entsize))
     {
       Elf_Sym *sym;
-      grub_uint8_t *addr;
+      grub_uint8_t *place;
       grub_uint64_t sym_addr;
 
       if (rel->r_offset >= seg->size)
@@ -71,12 +71,12 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
       sym_addr = sym->st_value;
       if (s->sh_type == SHT_RELA)
 	sym_addr += ((Elf_Rela *) rel)->r_addend;
-      addr = (grub_uint8_t *) ((char*)seg->addr + rel->r_offset);
+      place = (grub_uint8_t *) ((char*)seg->addr + rel->r_offset);
       switch (ELF_R_TYPE (rel->r_info))
 	{
 	case R_LARCH_64:
 	  {
-	    *(grub_uint64_t *)addr=(grub_uint64_t)sym_addr;
+	    *(grub_uint64_t *)place=(grub_uint64_t)sym_addr;
 	  }
 	break;
 	case R_LARCH_MARK_LA:
@@ -87,7 +87,7 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	case R_LARCH_SOP_PUSH_PCREL:
 	  {
 	    opri++;
-	    oprs[opri]=(grub_uint64_t)(sym_addr-(grub_uint64_t)addr);
+	    oprs[opri]=(grub_uint64_t)(sym_addr-(grub_uint64_t)place);
 	  }
 	break;
 	case R_LARCH_SOP_PUSH_ABSOLUTE:
@@ -99,7 +99,7 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
 	  {
 	    opri++;
-	    oprs[opri]=(grub_uint64_t)(sym_addr-(grub_uint64_t)addr);
+	    oprs[opri]=(grub_uint64_t)(sym_addr-(grub_uint64_t)place);
 	  }
 	  break;
 	case R_LARCH_SOP_SUB:
@@ -176,14 +176,14 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	  {
 	    grub_uint64_t opr1 = oprs[opri];
 	    opri--;
-	    *(grub_uint64_t *)addr=(*(grub_uint64_t *)addr) | ((opr1 & 0x1f) << 10);
+	    *(grub_uint64_t *)place=(*(grub_uint64_t *)place) | ((opr1 & 0x1f) << 10);
 	  }
 	  break;
 	case R_LARCH_SOP_POP_32_U_10_12:
 	  {
 	    grub_uint64_t opr1 = oprs[opri];
 	    opri--;
-	    *(grub_uint64_t *)addr=(*(grub_uint64_t *)addr) | ((opr1 & 0xfff) << 10);
+	    *(grub_uint64_t *)place=(*(grub_uint64_t *)place) | ((opr1 & 0xfff) << 10);
 	  }
 	  break;
 	case R_LARCH_SOP_POP_32_S_10_12:
@@ -192,44 +192,44 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	      la_abs=0;
 	    grub_uint64_t opr1 = oprs[opri];
 	    opri--;
-	    *(grub_uint64_t *)addr= (*(grub_uint64_t *)addr) | ((opr1 & 0xfff) << 10);
+	    *(grub_uint64_t *)place= (*(grub_uint64_t *)place) | ((opr1 & 0xfff) << 10);
 	  }
 	  break;
 	case R_LARCH_SOP_POP_32_S_10_16:
 	  {
 	    grub_uint64_t opr1 = oprs[opri];
 	    opri--;
-	    *(grub_uint64_t *)addr= (*(grub_uint64_t *)addr) | ((opr1 & 0xffff) << 10);
+	    *(grub_uint64_t *)place= (*(grub_uint64_t *)place) | ((opr1 & 0xffff) << 10);
 	  }
 	  break;
 	case R_LARCH_SOP_POP_32_S_10_16_S2:
 	  {
 	    grub_uint64_t opr1 = oprs[opri];
 	    opri--;
-	    *(grub_uint64_t *)addr= (*(grub_uint64_t *)addr) | (((opr1 >> 2) & 0xffff) << 10);
+	    *(grub_uint64_t *)place= (*(grub_uint64_t *)place) | (((opr1 >> 2) & 0xffff) << 10);
 	  }
 	  break;
 	case R_LARCH_SOP_POP_32_S_5_20:
 	  {
 	    grub_uint64_t opr1 = oprs[opri];
 	    opri--;
-	    *(grub_uint64_t *)addr= (*(grub_uint64_t *)addr) | ((opr1 & 0xfffff)<<5)	;
+	    *(grub_uint64_t *)place= (*(grub_uint64_t *)place) | ((opr1 & 0xfffff)<<5)	;
 	  }
 	  break;
 	case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
 	  {
 	    grub_uint64_t opr1 = oprs[opri];
 	    opri--;
-	    *(grub_uint64_t *)addr=(*(grub_uint64_t *)addr) | (((opr1 >> 2) & 0xffff) << 10);
-	    *(grub_uint64_t *)addr=(*(grub_uint64_t *)addr) | ((opr1 >> 18) & 0x1f);
+	    *(grub_uint64_t *)place=(*(grub_uint64_t *)place) | (((opr1 >> 2) & 0xffff) << 10);
+	    *(grub_uint64_t *)place=(*(grub_uint64_t *)place) | ((opr1 >> 18) & 0x1f);
 	  }
 	  break;
 	case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
 	  {
 	    grub_uint64_t opr1 = oprs[opri];
 	    opri--;
-	    *(grub_uint64_t *)addr=(*(grub_uint64_t *)addr) | (((opr1 >> 2) & 0xffff) << 10);
-	    *(grub_uint64_t *)addr=(*(grub_uint64_t *)addr) | ((opr1 >> 18) & 0x3ff);
+	    *(grub_uint64_t *)place=(*(grub_uint64_t *)place) | (((opr1 >> 2) & 0xffff) << 10);
+	    *(grub_uint64_t *)place=(*(grub_uint64_t *)place) | ((opr1 >> 18) & 0x3ff);
 	  }
 	  break;
 	default:
