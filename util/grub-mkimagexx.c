@@ -44,6 +44,7 @@
 #include <grub/arm/reloc.h>
 #include <grub/arm64/reloc.h>
 #include <grub/ia64/reloc.h>
+#include <grub/loongarch64/reloc.h>
 #include <grub/osdep/hostfile.h>
 #include <grub/util/install.h>
 #include <grub/util/mkimage.h>
@@ -784,13 +785,11 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
   struct grub_ia64_trampoline *tr = (void *) (pe_target + tramp_off);
   grub_uint64_t *gpptr = (void *) (pe_target + got_off);
   unsigned unmatched_adr_got_page = 0;
+  grub_stack_t* stack;
+  stack = grub_stack_new (16);
 #define MASK19 ((1 << 19) - 1)
 #else
   grub_uint32_t *tr = (void *) (pe_target + tramp_off);
-#endif
-#ifdef (__loongarch__)
-  grub_stack_t* stack;
-  stack = grub_stack_new (16);
 #endif
 
   for (i = 0, s = smd->sections;
@@ -1142,53 +1141,7 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 						  +offset
 						  +image_target->vaddr_offset));
 		     break;
-#if 0
-		   case R_LARCH_SOP_PUSH_ABSOLUTE:
-		     grub_loongarch64_sop_push (stack, sym_addr);
-		     break;
-		   case R_LARCH_SOP_SUB:
-		     grub_loongarch64_sop_sub (stack);
-		     break;
-		   case R_LARCH_SOP_SL:
-		     grub_loongarch64_sop_sl (stack);
-		    break;
-		   case R_LARCH_SOP_SR:
-		    grub_loongarch64_sop_sr (stack);
-		     break;
-		   case R_LARCH_SOP_ADD:
-		     grub_loongarch64_sop_add (stack);
-		     break;
-		   case R_LARCH_SOP_AND:
-		     grub_loongarch64_sop_and (stack);
-		     break;
-		   case R_LARCH_SOP_IF_ELSE:
-		     grub_loongarch64_sop_if_else (stack);
-		     break;
-		   case R_LARCH_SOP_POP_32_S_10_5:
-		     grub_loongarch64_sop_32_s_10_5 (stack, target);
-		     break;
-		   case R_LARCH_SOP_POP_32_U_10_12:
-		     grub_loongarch64_sop_32_u_10_12 (stack, target);
-		     break;
-		   case R_LARCH_SOP_POP_32_S_10_12:
-		     grub_loongarch64_sop_32_s_10_12 (stack, target);
-		     break;
-		   case R_LARCH_SOP_POP_32_S_10_16:
-		     grub_loongarch64_sop_32_s_10_16 (stack, target);
-		     break;
-		   case R_LARCH_SOP_POP_32_S_10_16_S2:
-		     grub_loongarch64_sop_32_s_10_16_s2 (stack, target);
-		     break;
-		   case R_LARCH_SOP_POP_32_S_5_20:
-		     grub_loongarch64_sop_32_s_5_20 (stack, target);
-		     break;
-		   case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
-		     grub_loongarch64_sop_32_s_0_5_10_16_s2 (stack, target);
-		     break;
-		   case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
-		     grub_loongarch64_sop_32_s_0_10_10_16_s2 (stack, target);
-		     break;
-#endif
+		   GRUB_LOONGARCH64_RELOCATION (stack, target, sym_addr);
 		   default:
 		     grub_util_error (_("relocation 0x%x is not implemented yet"),
 				      (unsigned int) ELF_R_TYPE (info));
@@ -1495,7 +1448,7 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 	     }
 	  }
       }
-#ifdef (__loongarch__)
+#ifdef MKIMAGE_ELF64
   grub_stack_destroy (stack);
 #endif
 }
