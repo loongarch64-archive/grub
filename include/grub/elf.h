@@ -1451,26 +1451,27 @@ typedef struct
 #define OHWA1_R4KEOP_CLEAN	0x00000002
 
 /* LOONGARCH64 relocs.  */
-#define R_LARCH_NONE	0
-#define R_LARCH_64	2
-#define R_LARCH_MARK_LA	20
-#define R_LARCH_SOP_PUSH_PCREL	22
-#define R_LARCH_SOP_PUSH_ABSOLUTE	23
-#define R_LARCH_SOP_PUSH_PLT_PCREL	29
-#define R_LARCH_SOP_SUB	32
-#define R_LARCH_SOP_SL	33
-#define R_LARCH_SOP_SR	34
-#define R_LARCH_SOP_ADD	35
-#define R_LARCH_SOP_AND	36
-#define R_LARCH_SOP_IF_ELSE	37
-#define R_LARCH_SOP_POP_32_S_10_5	38
-#define R_LARCH_SOP_POP_32_U_10_12	39
-#define R_LARCH_SOP_POP_32_S_10_12	40
-#define R_LARCH_SOP_POP_32_S_10_16	41
-#define R_LARCH_SOP_POP_32_S_10_16_S2	42
-#define R_LARCH_SOP_POP_32_S_5_20	43
-#define R_LARCH_SOP_POP_32_S_0_5_10_16_S2	44
-#define R_LARCH_SOP_POP_32_S_0_10_10_16_S2	45
+
+#define R_LARCH_NONE			      0
+#define R_LARCH_64			      2  /* *(int64_t *) PC = RtAddr + A */
+#define R_LARCH_MARK_LA			      20
+#define R_LARCH_SOP_PUSH_PCREL		      22  /* push (S - PC + A) */
+#define R_LARCH_SOP_PUSH_ABSOLUTE	      23  /* push (S + A) */
+#define R_LARCH_SOP_PUSH_PLT_PCREL	      29  /* push (PLT - PC) */
+#define R_LARCH_SOP_SUB			      32  /* opr2 = pop (), opr1 = pop (), push (opr1 - opr2) */
+#define R_LARCH_SOP_SL			      33  /* opr2 = pop (), opr1 = pop (), push (opr1 << opr2) */
+#define R_LARCH_SOP_SR			      34  /* opr2 = pop (), opr1 = pop (), push (opr1 >> opr2) */
+#define R_LARCH_SOP_ADD			      35
+#define R_LARCH_SOP_AND			      36
+#define R_LARCH_SOP_IF_ELSE		      37
+#define R_LARCH_SOP_POP_32_S_10_5	      38
+#define R_LARCH_SOP_POP_32_U_10_12	      39
+#define R_LARCH_SOP_POP_32_S_10_12	      40
+#define R_LARCH_SOP_POP_32_S_10_16	      41
+#define R_LARCH_SOP_POP_32_S_10_16_S2	      42
+#define R_LARCH_SOP_POP_32_S_5_20	      43
+#define R_LARCH_SOP_POP_32_S_0_5_10_16_S2     44
+#define R_LARCH_SOP_POP_32_S_0_10_10_16_S2    45
 
 /* MIPS relocs.  */
 
