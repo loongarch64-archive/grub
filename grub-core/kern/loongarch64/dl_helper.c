@@ -23,7 +23,6 @@
 #include <grub/err.h>
 #include <grub/mm.h>
 #include <grub/i18n.h>
-#include <grub/cpu/stack.h>
 #include <grub/cpu/reloc.h>
 
 void grub_loongarch64_sop_push (grub_stack_t* stack, grub_int64_t offset)
@@ -31,6 +30,7 @@ void grub_loongarch64_sop_push (grub_stack_t* stack, grub_int64_t offset)
   grub_stack_push (stack, offset);
 }
 
+/* opr2 = pop (), opr1 = pop (), push (opr1 - opr2) */
 void grub_loongarch64_sop_sub (grub_stack_t* stack)
 {
   grub_uint64_t a, b;
@@ -39,6 +39,7 @@ void grub_loongarch64_sop_sub (grub_stack_t* stack)
   grub_stack_push (stack, a - b);
 }
 
+/* opr2 = pop (), opr1 = pop (), push (opr1 << opr2) */
 void grub_loongarch64_sop_sl (grub_stack_t* stack)
 {
   grub_uint64_t a, b;
@@ -47,6 +48,7 @@ void grub_loongarch64_sop_sl (grub_stack_t* stack)
   grub_stack_push (stack, a << b);
 }
 
+/* opr2 = pop (), opr1 = pop (), push (opr1 >> opr2) */
 void grub_loongarch64_sop_sr (grub_stack_t* stack)
 {
   grub_uint64_t a, b;
@@ -55,6 +57,7 @@ void grub_loongarch64_sop_sr (grub_stack_t* stack)
   grub_stack_push (stack, a >> b);
 }
 
+/* opr2 = pop (), opr1 = pop (), push (opr1 + opr2) */
 void grub_loongarch64_sop_add (grub_stack_t* stack)
 {
   grub_uint64_t a, b;
@@ -63,6 +66,7 @@ void grub_loongarch64_sop_add (grub_stack_t* stack)
   grub_stack_push (stack, a + b);
 }
 
+/* opr2 = pop (), opr1 = pop (), push (opr1 & opr2) */
 void grub_loongarch64_sop_and (grub_stack_t* stack)
 {
   grub_uint64_t a, b;
@@ -71,6 +75,7 @@ void grub_loongarch64_sop_and (grub_stack_t* stack)
   grub_stack_push (stack, a & b);
 }
 
+/* opr3 = pop (), opr2 = pop (), opr1 = pop (), push (opr1 ? opr2 : opr3) */
 void grub_loongarch64_sop_if_else (grub_stack_t* stack)
 {
   grub_uint64_t a, b, c;
@@ -85,30 +90,35 @@ void grub_loongarch64_sop_if_else (grub_stack_t* stack)
   }
 }
 
+/* opr1 = pop (), (*(uint32_t *) PC) [14 ... 10] = opr1 [4 ... 0] */
 void grub_loongarch64_sop_32_s_10_5 (grub_stack_t* stack, grub_uint64_t *place)
 {
   grub_uint64_t a = grub_stack_pop (stack);
   *place = *place | ((a & 0x1f) << 10);
 }
 
+/* opr1 = pop (), (*(uint32_t *) PC) [21 ... 10] = opr1 [11 ... 0] */
 void grub_loongarch64_sop_32_u_10_12 (grub_stack_t* stack, grub_uint64_t *place)
 {
   grub_uint64_t a = grub_stack_pop (stack);
   *place = *place | ((a & 0xfff) << 10);
 }
 
+/* opr1 = pop (), (*(uint32_t *) PC) [21 ... 10] = opr1 [11 ... 0] */
 void grub_loongarch64_sop_32_s_10_12 (grub_stack_t* stack, grub_uint64_t *place)
 {
   grub_uint64_t a = grub_stack_pop (stack);
   *place = (*place) | ((a & 0xfff) << 10);
 }
 
+/* opr1 = pop (), (*(uint32_t *) PC) [25 ... 10] = opr1 [15 ... 0] */
 void grub_loongarch64_sop_32_s_10_16 (grub_stack_t* stack, grub_uint64_t *place)
 {
   grub_uint64_t a = grub_stack_pop (stack);
   *place = (*place) | ((a & 0xffff) << 10);
 }
 
+/* opr1 = pop (), (*(uint32_t *) PC) [25 ... 10] = opr1 [17 ... 2] */
 void grub_loongarch64_sop_32_s_10_16_s2 (grub_stack_t* stack,
 					 grub_uint64_t *place)
 {
@@ -116,12 +126,14 @@ void grub_loongarch64_sop_32_s_10_16_s2 (grub_stack_t* stack,
   *place = (*place) | (((a >> 2) & 0xffff) << 10);
 }
 
+/* opr1 = pop (), (*(uint32_t *) PC) [24 ... 5] = opr1 [19 ... 0] */
 void grub_loongarch64_sop_32_s_5_20 (grub_stack_t* stack, grub_uint64_t *place)
 {
   grub_uint64_t a = grub_stack_pop (stack);
   *place = (*place) | ((a & 0xfffff)<<5);
 }
 
+/* opr1 = pop (), (*(uint32_t *) PC) [4 ... 0] = opr1 [22 ... 18] */
 void grub_loongarch64_sop_32_s_0_5_10_16_s2 (grub_stack_t* stack,
 					     grub_uint64_t *place)
 {
@@ -131,6 +143,7 @@ void grub_loongarch64_sop_32_s_0_5_10_16_s2 (grub_stack_t* stack,
   *place =(*place) | ((a >> 18) & 0x1f);
 }
 
+/* opr1 = pop (), (*(uint32_t *) PC) [9 ... 0] = opr1 [27 ... 18] */
 void grub_loongarch64_sop_32_s_0_10_10_16_s2 (grub_stack_t* stack,
 					      grub_uint64_t *place)
 {
