@@ -18,6 +18,7 @@
 
 #ifndef GRUB_LOONGARCH64_RELOC_H
 #define GRUB_LOONGARCH64_RELOC_H 1
+#include <grub/loongarch64/stack.h>
 
 void grub_loongarch64_sop_push		     (grub_stack_t* stack,
 					      grub_int64_t offset);
@@ -43,4 +44,52 @@ void grub_loongarch64_sop_32_s_0_5_10_16_s2  (grub_stack_t* stack,
 					      grub_uint64_t *place);
 void grub_loongarch64_sop_32_s_0_10_10_16_s2 (grub_stack_t* stack,
 					      grub_uint64_t *place);
+
+#define GRUB_LOONGARCH64_RELOCATION(STACK, PLACE, OFFSET)	\
+  case R_LARCH_SOP_PUSH_ABSOLUTE:				\
+    grub_loongarch64_sop_push (STACK, OFFSET);			\
+    break;							\
+  case R_LARCH_SOP_SUB:						\
+    grub_loongarch64_sop_sub (STACK);				\
+    break;							\
+  case R_LARCH_SOP_SL:		      				\
+    grub_loongarch64_sop_sl (STACK);				\
+    break;			      				\
+  case R_LARCH_SOP_SR:		      				\
+    grub_loongarch64_sop_sr (STACK);				\
+    break;					    		\
+  case R_LARCH_SOP_ADD:		      		    		\
+    grub_loongarch64_sop_add (STACK); 		    		\
+    break;			      		    		\
+  case R_LARCH_SOP_AND:		      		    		\
+    grub_loongarch64_sop_and (STACK);		    		\
+    break;					    		\
+  case R_LARCH_SOP_IF_ELSE:			    		\
+    grub_loongarch64_sop_if_else (STACK);	    		\
+    break;					    		\
+  case R_LARCH_SOP_POP_32_S_10_5:		    		\
+    grub_loongarch64_sop_32_s_10_5 (STACK, PLACE);  		\
+    break;					    		\
+  case R_LARCH_SOP_POP_32_U_10_12:		    		\
+    grub_loongarch64_sop_32_u_10_12 (STACK, PLACE);		\
+    break;							\
+  case R_LARCH_SOP_POP_32_S_10_12:				\
+    grub_loongarch64_sop_32_s_10_12 (STACK, PLACE);		\
+    break;							\
+  case R_LARCH_SOP_POP_32_S_10_16:				\
+    grub_loongarch64_sop_32_s_10_16 (STACK, PLACE);		\
+    break;							\
+  case R_LARCH_SOP_POP_32_S_10_16_S2:				\
+    grub_loongarch64_sop_32_s_10_16_s2 (STACK, PLACE);		\
+    break;							\
+  case R_LARCH_SOP_POP_32_S_5_20:				\
+    grub_loongarch64_sop_32_s_5_20 (STACK, PLACE);		\
+    break;							\
+  case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:			\
+    grub_loongarch64_sop_32_s_0_5_10_16_s2 (STACK, PLACE);	\
+    break;							\
+  case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:			\
+    grub_loongarch64_sop_32_s_0_10_10_16_s2 (STACK, PLACE);	\
+    break;
+
 #endif /* GRUB_LOONGARCH64_RELOC_H */
