@@ -1164,28 +1164,28 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 		     grub_loongarch64_sop_if_else (stack);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_10_5:
-		     grub_loongarch64_sop_32_s_10_5 (stack, *target);
+		     grub_loongarch64_sop_32_s_10_5 (stack, target);
 		     break;
 		   case R_LARCH_SOP_POP_32_U_10_12:
-		     grub_loongarch64_sop_32_u_10_12 (stack, *target);
+		     grub_loongarch64_sop_32_u_10_12 (stack, target);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_10_12:
-		     grub_loongarch64_sop_32_s_10_12 (stack, *target);
+		     grub_loongarch64_sop_32_s_10_12 (stack, target);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_10_16:
-		     grub_loongarch64_sop_32_s_10_16 (stack, *target);
+		     grub_loongarch64_sop_32_s_10_16 (stack, target);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_10_16_S2:
-		     grub_loongarch64_sop_32_s_10_16_s2 (stack, *target);
+		     grub_loongarch64_sop_32_s_10_16_s2 (stack, target);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_5_20:
-		     grub_loongarch64_sop_32_s_5_20 (stack, *target);
+		     grub_loongarch64_sop_32_s_5_20 (stack, target);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
-		     grub_loongarch64_sop_32_s_0_5_10_16_s2 (stack, *target);
+		     grub_loongarch64_sop_32_s_0_5_10_16_s2 (stack, target);
 		     break;
 		   case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
-		     grub_loongarch64_sop_32_s_0_10_10_16_s2 (stack, *target);
+		     grub_loongarch64_sop_32_s_0_10_10_16_s2 (stack, target);
 		     break;
 		   default:
 		     grub_util_error (_("relocation 0x%x is not implemented yet"),
