@@ -47,40 +47,36 @@ grub_err_t
 grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 			       Elf_Shdr *s, grub_dl_segment_t seg)
 {
-  Elf_Ehdr *e = ehdr;
   Elf_Rel *rel, *max;
   grub_uint64_t oprs[RELOC_STACK_MAX]={0};
   int opri=-1;
   grub_uint32_t la_abs = 0;
 
-  for (rel = (Elf_Rel *) ((char *) e + s->sh_offset),
+  for (rel = (Elf_Rel *) ((char *) ehdr + s->sh_offset),
 	 max = (Elf_Rel *) ((char *) rel + s->sh_size);
        rel < max;
        rel = (Elf_Rel *) ((char *) rel + s->sh_entsize))
     {
-      grub_uint8_t *addr;
       Elf_Sym *sym;
-      Elf_Addr r_info;
-      grub_uint64_t sym_value;
+      grub_uint8_t *addr;
+      grub_uint64_t sym_addr;
 
-      if (seg->size < rel->r_offset)
+      if (rel->r_offset >= seg->size)
 	return grub_error (GRUB_ERR_BAD_MODULE,
 			   "reloc offset is out of the segment");
 
-      r_info = (grub_uint64_t) (rel->r_info);
-      addr = (grub_uint8_t *) ((char*)seg->addr + rel->r_offset);
       sym = (Elf_Sym *) ((char*)mod->symtab
-			 + mod->symsize * ELF_R_SYM (r_info));
-      sym_value = sym->st_value;
+			 + mod->symsize * ELF_R_SYM (rel->r_info));
+
+      sym_addr = sym->st_value;
       if (s->sh_type == SHT_RELA)
-	{
-	  sym_value += ((Elf_Rela *) rel)->r_addend;
-	}
-      switch (ELF_R_TYPE (r_info))
+	sym_addr += ((Elf_Rela *) rel)->r_addend;
+      addr = (grub_uint8_t *) ((char*)seg->addr + rel->r_offset);
+      switch (ELF_R_TYPE (rel->r_info))
 	{
 	case R_LARCH_64:
 	  {
-	    *(grub_uint64_t *)addr=(grub_uint64_t)sym_value;
+	    *(grub_uint64_t *)addr=(grub_uint64_t)sym_addr;
 	  }
 	break;
 	case R_LARCH_MARK_LA:
@@ -91,19 +87,19 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	case R_LARCH_SOP_PUSH_PCREL:
 	  {
 	    opri++;
-	    oprs[opri]=(grub_uint64_t)(sym_value-(grub_uint64_t)addr);
+	    oprs[opri]=(grub_uint64_t)(sym_addr-(grub_uint64_t)addr);
 	  }
 	break;
 	case R_LARCH_SOP_PUSH_ABSOLUTE:
 	  {
 	    opri++;
-	    oprs[opri]=(grub_uint64_t)sym_value;
+	    oprs[opri]=(grub_uint64_t)sym_addr;
 	  }
 	break;
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
 	  {
 	    opri++;
-	    oprs[opri]=(grub_uint64_t)(sym_value-(grub_uint64_t)addr);
+	    oprs[opri]=(grub_uint64_t)(sym_addr-(grub_uint64_t)addr);
 	  }
 	  break;
 	case R_LARCH_SOP_SUB:
@@ -238,9 +234,12 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	  break;
 	default:
 	  {
+	    char rel_info[17]; /* log16(2^64) = 16, plus NUL. */
+
+	    grub_snprintf (rel_info, sizeof (rel_info) - 1, "%" PRIxGRUB_UINT64_T,
+			   (grub_uint64_t) ELF_R_TYPE (rel->r_info));
 	    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-			       N_("relocation 0x%"PRIxGRUB_ADDR" is not implemented yet"),
-			       ELF_R_TYPE (r_info));
+			       N_("relocation 0x%s is not implemented yet"), rel_info);
 	  }
 	  break;
 	}
