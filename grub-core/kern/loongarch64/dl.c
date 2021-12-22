@@ -23,7 +23,6 @@
 #include <grub/types.h>
 #include <grub/mm.h>
 #include <grub/i18n.h>
-#include <grub/cpu/stack.h>
 #include <grub/cpu/reloc.h>
 
 #define RELOC_STACK_MAX 1024
@@ -52,9 +51,6 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
   Elf_Rel *rel, *max;
   grub_stack_t* stack;
   stack = grub_stack_new (16);
-  grub_uint64_t oprs[RELOC_STACK_MAX]={0};
-  int opri=-1;
-  grub_uint32_t la_abs = 0;
 
   for (rel = (Elf_Rel *) ((char *) ehdr + s->sh_offset),
 	 max = (Elf_Rel *) ((char *) rel + s->sh_size);
@@ -81,165 +77,18 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
       switch (ELF_R_TYPE (rel->r_info))
 	{
 	case R_LARCH_64:
-	  {
-	    *place=sym_addr;
-	  }
-	break;
-	case R_LARCH_MARK_LA:
-	  {
-	    la_abs=1;
-	  }
+	  *place = sym_addr;
 	break;
 	case R_LARCH_SOP_PUSH_PCREL:
-	  {
-	    //XXX
-	    opri++;
-	    oprs[opri]=sym_addr-(grub_uint64_t)place;
-	  }
-	break;
-	case R_LARCH_SOP_PUSH_ABSOLUTE:
-	  {
-	    opri++;
-	    oprs[opri]=(grub_uint64_t)sym_addr;
-	  }
-	break;
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
 	  {
 	    //XXX
-	    opri++;
-	    oprs[opri]=(grub_uint64_t)(sym_addr-(grub_uint64_t)place);
+	    grub_loongarch64_sop_push (stack, sym_addr - (grub_uint64_t)place);
+	    /* 或者使用下面的行 */
+	    //grub_loongarch64_sop_push (stack, sym_addr - *place);
 	  }
-	  break;
-	case R_LARCH_SOP_SUB:
-	  {
-	    grub_uint64_t opr2=oprs[opri];
-	    opri--;
-	    grub_uint64_t opr1=oprs[opri];
-	    opri--;
-	    opri++;
-	    oprs[opri]=opr1 - opr2;
-	  }
-	  break;
-	case R_LARCH_SOP_SL:
-	  {
-	    grub_uint64_t opr2=oprs[opri];
-	    opri--;
-	    grub_uint64_t opr1=oprs[opri];
-	    opri--;
-	    opri++;
-	    oprs[opri]=opr1 << opr2;
-	  }
-	  break;
-	case R_LARCH_SOP_SR:
-	  {
-	    grub_uint64_t opr2=oprs[opri];
-	    opri--;
-	    grub_uint64_t opr1=oprs[opri];
-	    opri--;
-	    opri++;
-	    oprs[opri]=opr1 >> opr2;
-	  }
-	  break;
-	case R_LARCH_SOP_ADD:
-	  {
-	    grub_uint64_t opr2=oprs[opri];
-	    opri--;
-	    grub_uint64_t opr1=oprs[opri];
-	    opri--;
-	    opri++;
-	    oprs[opri]=opr1 + opr2;
-	  }
-	  break;
-	case R_LARCH_SOP_AND:
-	  {
-	    grub_uint64_t opr2=oprs[opri];
-	    opri--;
-	    grub_uint64_t opr1=oprs[opri];
-	    opri--;
-	    opri++;
-	    oprs[opri]=opr1 & opr2;
-	  }
-	  break;
-	case R_LARCH_SOP_IF_ELSE:
-	  {
-	    grub_uint64_t opr3=oprs[opri];
-	    opri--;
-	    grub_uint64_t opr2=oprs[opri];
-	    opri--;
-	    grub_uint64_t opr1=oprs[opri];
-	    opri--;
-	    if(opr1)
-	      {
-	    	opri++;
-	    	oprs[opri]=opr2;
-	      }
-	    else
-	      {
-	    	opri++;
-	    	oprs[opri]=opr3;
-	      }
-	  }
-	  break;
-	case R_LARCH_SOP_POP_32_S_10_5:
-	  {
-	    grub_uint64_t opr1 = oprs[opri];
-	    opri--;
-	    *(grub_uint64_t *)place=(*place) | ((opr1 & 0x1f) << 10);
-	  }
-	  break;
-	case R_LARCH_SOP_POP_32_U_10_12:
-	  {
-	    grub_uint64_t opr1 = oprs[opri];
-	    opri--;
-	    *(grub_uint64_t *)place=(*place) | ((opr1 & 0xfff) << 10);
-	  }
-	  break;
-	case R_LARCH_SOP_POP_32_S_10_12:
-	  {
-	    if(la_abs==1)
-	      la_abs=0;
-	    grub_uint64_t opr1 = oprs[opri];
-	    opri--;
-	    *(grub_uint64_t *)place= (*place) | ((opr1 & 0xfff) << 10);
-	  }
-	  break;
-	case R_LARCH_SOP_POP_32_S_10_16:
-	  {
-	    grub_uint64_t opr1 = oprs[opri];
-	    opri--;
-	    *(grub_uint64_t *)place= (*place) | ((opr1 & 0xffff) << 10);
-	  }
-	  break;
-	case R_LARCH_SOP_POP_32_S_10_16_S2:
-	  {
-	    grub_uint64_t opr1 = oprs[opri];
-	    opri--;
-	    *(grub_uint64_t *)place= (*place) | (((opr1 >> 2) & 0xffff) << 10);
-	  }
-	  break;
-	case R_LARCH_SOP_POP_32_S_5_20:
-	  {
-	    grub_uint64_t opr1 = oprs[opri];
-	    opri--;
-	    *(grub_uint64_t *)place= (*place) | ((opr1 & 0xfffff)<<5)	;
-	  }
-	  break;
-	case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
-	  {
-	    grub_uint64_t opr1 = oprs[opri];
-	    opri--;
-	    *(grub_uint64_t *)place=(*place) | (((opr1 >> 2) & 0xffff) << 10);
-	    *(grub_uint64_t *)place=(*place) | ((opr1 >> 18) & 0x1f);
-	  }
-	  break;
-	case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
-	  {
-	    grub_uint64_t opr1 = oprs[opri];
-	    opri--;
-	    *(grub_uint64_t *)place=(*place) | (((opr1 >> 2) & 0xffff) << 10);
-	    *(grub_uint64_t *)place=(*place) | ((opr1 >> 18) & 0x3ff);
-	  }
-	  break;
+	break;
+	GRUB_LOONGARCH64_RELOCATION (stack, place, sym_addr);
 	default:
 	  {
 	    char rel_info[17]; /* log16(2^64) = 16, plus NUL. */
