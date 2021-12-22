@@ -1142,6 +1142,7 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 						  +offset
 						  +image_target->vaddr_offset));
 		     break;
+#if 0
 		   case R_LARCH_SOP_PUSH_ABSOLUTE:
 		     grub_loongarch64_sop_push (stack, sym_addr);
 		     break;
@@ -1187,6 +1188,7 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 		   case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
 		     grub_loongarch64_sop_32_s_0_10_10_16_s2 (stack, target);
 		     break;
+#endif
 		   default:
 		     grub_util_error (_("relocation 0x%x is not implemented yet"),
 				      (unsigned int) ELF_R_TYPE (info));
