@@ -43,7 +43,9 @@ grub_arch_dl_check_header (void *ehdr)
 
 #pragma GCC diagnostic ignored "-Wcast-align"
 
-/* Relocate symbols.  */
+/*
+ * Unified function for both REL and RELA
+ */
 grub_err_t
 grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 			       Elf_Shdr *s, grub_dl_segment_t seg)
@@ -83,7 +85,7 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
 	  grub_loongarch64_sop_push (stack, sym_addr - (grub_uint64_t)place);
 	break;
-	GRUB_LOONGARCH64_RELOCATION (stack, place, sym_addr);
+	GRUB_LOONGARCH64_RELOCATION (stack, place, sym_addr)
 	default:
 	  {
 	    char rel_info[17]; /* log16(2^64) = 16, plus NUL. */

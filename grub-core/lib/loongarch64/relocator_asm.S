@@ -15,6 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
+/* Used to support ELF linux kernel */
 
 #include <grub/symbol.h>
 
@@ -23,27 +24,27 @@
 VARIABLE (grub_relocator_forward_start)
 
 copycont1:
-	ld.d $r11,$r8,0
-	st.d $r11,$r9,0
-	addi.d $r8, $r8, 8
-	addi.d $r10, $r10, -8
-	addi.d $r9, $r9, 8
-	bne $r10, $r0, copycont1
+	ld.d	$r11, $r8,  0
+	st.d	$r11, $r9,  0
+	addi.d	$r8,  $r8,  8
+	addi.d 	$r10, $r10, -8
+	addi.d 	$r9,  $r9,  8
+	bne    	$r10, $r0,  copycont1
 
 VARIABLE (grub_relocator_forward_end)
 
 VARIABLE (grub_relocator_backward_start)
 
-	add.d $r9, $r9, $r10
-	add.d $r8, $r8, $r10
-	addi.d $r9, $r9, -8
-	addi.d $r8, $r8, -8
+	add.d	$r9, $r9, $r10
+	add.d 	$r8, $r8, $r10
+	addi.d	$r9, $r9, -8
+	addi.d 	$r8, $r8, -8
 copycont2:
-	ld.w $r11,$r8,0
-	st.w $r11,$r9,0
-	addi.d $r8, $r8, -8
-	addi.d $r10, $r10, -8
-	addi.d $r9, $r9, -8
-	bne $r10, $r0, copycont2
+	ld.w	$r11, $r8,   0
+	st.w 	$r11, $r9,   0
+	addi.d	$r8,  $r8,  -8
+	addi.d 	$r10, $r10, -8
+	addi.d 	$r9,  $r9,  -8
+	bne	$r10, $r0,  copycont2
 
 VARIABLE (grub_relocator_backward_end)

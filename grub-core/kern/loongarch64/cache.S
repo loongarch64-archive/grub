@@ -18,8 +18,28 @@
 
 #include <grub/symbol.h>
 
-FUNCTION (grub_arch_sync_caches)
-	jirl $zero,$ra,0
+	.file	"cache_flush.S"
+	.text
 
-FUNCTION (grub_arch_sync_dma_caches)
-	jirl $zero,$ra,0
+/*
+ * Simple cache maintenance functions
+ */
+
+/*
+ * a0 - *beg (inclusive)
+ * a1 - *end (exclusive)
+ * a2 - line size
+*/
+FUNCTION(grub_arch_clean_dcache_range)
+	/* TODO */
+	dbar 0
+	jr $ra
+
+/*
+ * a0 - *beg (inclusive)
+ * a1 - *end (exclusive)
+ * a2 - line size
+ */
+FUNCTION(grub_arch_invalidate_icache_range)
+	ibar 0
+	jr $ra

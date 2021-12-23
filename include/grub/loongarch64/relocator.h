@@ -15,6 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
+/* Used to support ELF linux kernel */
 
 #ifndef GRUB_RELOCATOR_CPU_HEADER
 #define GRUB_RELOCATOR_CPU_HEADER	1
@@ -29,6 +30,7 @@ struct grub_relocator64_state
   int jumpreg;
 };
 
+/* to support ELF format kernel */
 grub_err_t
 grub_relocator64_boot (struct grub_relocator *rel,
 		       struct grub_relocator64_state state);

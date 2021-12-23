@@ -170,7 +170,7 @@ grub_loongarch64_sop_32_s_10_5 (grub_loongarch64_stack_t stack,
 				grub_uint64_t *place)
 {
   grub_uint64_t a = grub_loongarch64_stack_pop (stack);
-  *place = *place | ((a & 0x1f) << 10);
+  *place |= ((a & 0x1f) << 10);
 }
 
 /* opr1 = pop (), (*(uint32_t *) PC) [21 ... 10] = opr1 [11 ... 0] */
