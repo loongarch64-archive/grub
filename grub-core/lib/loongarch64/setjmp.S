@@ -18,7 +18,6 @@
 
 #include <grub/symbol.h>
 #include <grub/dl.h>
-#include <grub/loongarch64/asm.h>
 
 	.file	"setjmp.S"
 
@@ -27,35 +26,35 @@ GRUB_MOD_LICENSE "GPLv3+"
 	.text
 
 FUNCTION(grub_setjmp)
-	GRUB_ASM_REG_S $s0, $a0,0
-	GRUB_ASM_REG_S $s1, $a0,8
-	GRUB_ASM_REG_S $s2, $a0,16
-	GRUB_ASM_REG_S $s3, $a0,24
-	GRUB_ASM_REG_S $s4, $a0,32
-	GRUB_ASM_REG_S $s5, $a0,40
-	GRUB_ASM_REG_S $s6, $a0,48
-	GRUB_ASM_REG_S $s7, $a0,56
-	GRUB_ASM_REG_S $s8, $a0,64
-	GRUB_ASM_REG_S $fp, $a0,72
-	GRUB_ASM_REG_S $sp, $a0,80
-	GRUB_ASM_REG_S $ra, $a0,88
+	st.d $s0, $a0, 0
+	st.d $s1, $a0, 8
+	st.d $s2, $a0, 16
+	st.d $s3, $a0, 24
+	st.d $s4, $a0, 32
+	st.d $s5, $a0, 40
+	st.d $s6, $a0, 48
+	st.d $s7, $a0, 56
+	st.d $s8, $a0, 64
+	st.d $fp, $a0, 72
+	st.d $sp, $a0, 80
+	st.d $ra, $a0, 88
 	move $v0, $zero
 	move $v1, $zero
 	jirl $zero,$ra,0
 
 FUNCTION(grub_longjmp)
-	GRUB_ASM_REG_L $s0, $a0,0
-	GRUB_ASM_REG_L $s1, $a0,8
-	GRUB_ASM_REG_L $s2, $a0,16
-	GRUB_ASM_REG_L $s3, $a0,24
-	GRUB_ASM_REG_L $s4, $a0,32
-	GRUB_ASM_REG_L $s5, $a0,40
-	GRUB_ASM_REG_L $s6, $a0,48
-	GRUB_ASM_REG_L $s7, $a0,56
-	GRUB_ASM_REG_L $s8, $a0,64
-	GRUB_ASM_REG_L $fp, $a0,72
-	GRUB_ASM_REG_L $sp, $a0,80
-	GRUB_ASM_REG_L $ra, $a0,88
+	ld.d $s0, $a0,0
+	ld.d $s1, $a0,8
+	ld.d $s2, $a0,16
+	ld.d $s3, $a0,24
+	ld.d $s4, $a0,32
+	ld.d $s5, $a0,40
+	ld.d $s6, $a0,48
+	ld.d $s7, $a0,56
+	ld.d $s8, $a0,64
+	ld.d $fp, $a0,72
+	ld.d $sp, $a0,80
+	ld.d $ra, $a0,88
 	addi.w $v0, $zero, 1
 	bnez $a1, .ZW0
 	addi.d $v0, $a1, 0
