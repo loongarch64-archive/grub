@@ -21,53 +21,53 @@
 #include <grub/misc.h>
 #include <grub/dl.h>
 
-struct grub_stack
+struct grub_loongarch64_stack
 {
   grub_uint64_t *data;
   int count;
   int top;
 };
 
-grub_stack_t* grub_stack_new  (int n)
+grub_loongarch64_stack_t grub_loongarch64_stack_new  (int n)
 {
-  grub_stack_t *stack;
+  grub_loongarch64_stack_t stack;
 
-  stack = (grub_stack_t *) grub_malloc(sizeof(grub_stack_t));
+  stack = (grub_loongarch64_stack_t) grub_malloc(sizeof(struct grub_loongarch64_stack));
   stack->data = (grub_uint64_t*) grub_malloc (n * sizeof (grub_uint64_t));
   stack->count = n;
   stack->top = -1;
   return stack;
 }
 
-void grub_stack_push (grub_stack_t* stack, grub_uint64_t x)
+void grub_loongarch64_stack_push (grub_loongarch64_stack_t stack, grub_uint64_t x)
 {
   if (stack->top == stack->count)
     return;
   stack->data[++stack->top] = x;
 }
 
-grub_uint64_t grub_stack_pop (grub_stack_t* stack)
+grub_uint64_t grub_loongarch64_stack_pop (grub_loongarch64_stack_t stack)
 {
   if (stack->top == -1)
     return -1;
   return stack->data[stack->top--];
 }
 
-grub_uint64_t grub_stack_peek (grub_stack_t* stack)
+grub_uint64_t grub_loongarch64_stack_peek (grub_loongarch64_stack_t stack)
 {
   if (stack->top == -1)
     return -1;
   return stack->data[stack->top];
 }
 
-void grub_stack_display (grub_stack_t* stack)
+void grub_loongarch64_stack_display (grub_loongarch64_stack_t stack)
 {
   for(int i=stack->top ; i>-1 ; i--)
     grub_dprintf("stack:", "%"PRIuGRUB_UINT64_T" ",stack->data[i]);
   grub_dprintf("stack:", "\n\n");
 }
 
-void grub_stack_destroy (grub_stack_t* stack)
+void grub_loongarch64_stack_destroy (grub_loongarch64_stack_t stack)
 {
   grub_free(stack->data);
   grub_free(stack);

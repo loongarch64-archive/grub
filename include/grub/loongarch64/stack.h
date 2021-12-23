@@ -25,15 +25,15 @@
 extern "C" {
 #endif
 
-struct grub_stack;
-typedef struct grub_stack grub_stack_t;
+struct grub_loongarch64_stack;
+typedef struct grub_loongarch64_stack* grub_loongarch64_stack_t;
 
-grub_stack_t* grub_stack_new     (int count);
-void          grub_stack_push    (grub_stack_t* stack, grub_uint64_t x);
-grub_uint64_t grub_stack_pop     (grub_stack_t* stack);
-grub_uint64_t grub_stack_peek    (grub_stack_t* stack);
-void          grub_stack_display (grub_stack_t* stack);
-void          grub_stack_destroy (grub_stack_t* stack);
+grub_loongarch64_stack_t  grub_loongarch64_stack_new     (int count);
+void                      grub_loongarch64_stack_push    (grub_loongarch64_stack_t stack, grub_uint64_t x);
+grub_uint64_t             grub_loongarch64_stack_pop     (grub_loongarch64_stack_t stack);
+grub_uint64_t             grub_loongarch64_stack_peek    (grub_loongarch64_stack_t stack);
+void                      grub_loongarch64_stack_display (grub_loongarch64_stack_t stack);
+void                      grub_loongarch64_stack_destroy (grub_loongarch64_stack_t stack);
 
 #ifdef __cplusplus
 }

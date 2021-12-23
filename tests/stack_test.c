@@ -29,7 +29,7 @@
 static void
 stack_queue_test (void)
 {
-  grub_stack_t* stack;
+  grub_stack_t stack;
 
   stack = grub_stack_new (10);
 
