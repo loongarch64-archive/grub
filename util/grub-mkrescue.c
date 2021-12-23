@@ -780,7 +780,8 @@ main (int argc, char *argv[])
       free (imgname);
 
       imgname = grub_util_path_concat (2, efidir_efi_boot, "bootloongarch64.efi");
-      make_image_fwdisk_abs (GRUB_INSTALL_PLATFORM_LOONGARCH64_EFI, "loongarch64-efi",
+      make_image_fwdisk_abs (GRUB_INSTALL_PLATFORM_LOONGARCH64_EFI,
+			     "loongarch64-efi",
 			     imgname);
       free (imgname);
 

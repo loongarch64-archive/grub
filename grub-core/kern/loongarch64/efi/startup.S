@@ -21,22 +21,14 @@
 	.file 	"startup.S"
 	.text
 
-	.align		4
 FUNCTION(_start)
 	/*
 	 *  EFI_SYSTEM_TABLE and EFI_HANDLE are passed in $a1/$a0.
 	 */
-	addi.d		$sp, $sp, -16
-	st.d		$ra, $sp, 0
 
-	la 		$a2, grub_efi_image_handle
+	la 		$a2, EXT_C(grub_efi_image_handle)
 	st.d		$a0, $a2, 0
-	la		$a2, grub_efi_system_table
+	la		$a2, EXT_C(grub_efi_system_table)
 	st.d		$a1, $a2, 0
 
-	bl		grub_main
-
-1:
-	ld.d		$ra, $sp, 0
-	addi.d		$sp, $sp, 16
-	jirl 		$zero, $ra, 0
+	bl		EXT_C(grub_main)
