@@ -4,7 +4,7 @@
 
 # 在线下载 po 文件
 if [ $# -eq 1 ];then
-  ./linguas.sh
+#  ./linguas.sh
   ./bootstrap
 fi
 
