@@ -34,7 +34,5 @@ struct grub_relocator64_state
 grub_err_t
 grub_relocator64_boot (struct grub_relocator *rel,
 		       struct grub_relocator64_state state);
-grub_err_t grub_relocator64_efi_boot (struct grub_relocator *rel,
-				      struct grub_relocator64_efi_state state);
 
 #endif
