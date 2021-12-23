@@ -25,9 +25,7 @@
 #include <grub/loader.h>
 #include <grub/machine/loongarch64.h>
 
-#define EFI_TIMER_PERIOD_MICROSECONDS(Microseconds) ((grub_uint64_t)(Microseconds * 10))
 #define EFI_TIMER_PERIOD_MILLISECONDS(Milliseconds) ((grub_uint64_t)(Milliseconds * 10000))
-#define EFI_TIMER_PERIOD_SECONDS(Seconds)           ((grub_uint64_t)(Seconds* 10000000))
 
 static grub_uint64_t tmr;
 static grub_efi_event_t tmr_evt;
