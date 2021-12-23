@@ -1141,7 +1141,7 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 						  +offset
 						  +image_target->vaddr_offset));
 		     break;
-		   GRUB_LOONGARCH64_RELOCATION (stack, target, sym_addr);
+		   GRUB_LOONGARCH64_RELOCATION (stack, target, sym_addr)
 		   default:
 		     grub_util_error (_("relocation 0x%x is not implemented yet"),
 				      (unsigned int) ELF_R_TYPE (info));

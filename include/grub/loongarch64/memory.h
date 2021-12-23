@@ -15,6 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
+/* Used to support ELF linux kernel */
 
 #ifndef GRUB_MEMORY_CPU_HEADER
 #define GRUB_MEMORY_CPU_HEADER	1

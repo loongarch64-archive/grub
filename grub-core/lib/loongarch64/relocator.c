@@ -15,6 +15,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
+/* Used to support ELF linux kernel */
 
 #include <grub/mm.h>
 #include <grub/misc.h>
