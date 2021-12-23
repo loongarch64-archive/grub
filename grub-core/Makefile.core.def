@@ -263,7 +263,6 @@ kernel = {
   arm64_efi = kern/efi/fdt.c;
 
   loongarch64_efi = kern/loongarch64/efi/init.c;
-  loongarch64_efi = lib/loongarch64/efi/loongarch64.c;
 
   riscv32_efi = kern/riscv/efi/init.c;
   riscv32_efi = kern/efi/fdt.c;
@@ -343,7 +342,8 @@ kernel = {
   arm64 = kern/arm64/dl.c;
   arm64 = kern/arm64/dl_helper.c;
 
-  loongarch64 = kern/loongarch64/cache.S;
+  loongarch64 = kern/loongarch64/cache.c;
+  loongarch64 = kern/loongarch64/cache_flush.S;
   loongarch64 = kern/loongarch64/dl.c;
   loongarch64 = kern/loongarch64/dl_helper.c;
 
