@@ -345,6 +345,7 @@ kernel = {
 
   loongarch64 = kern/loongarch64/cache.S;
   loongarch64 = kern/loongarch64/dl.c;
+  loongarch64 = kern/loongarch64/dl_helper.c;
 
   riscv32 = kern/riscv/cache.c;
   riscv32 = kern/riscv/cache_flush.S;
