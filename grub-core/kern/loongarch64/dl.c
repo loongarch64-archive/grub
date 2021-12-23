@@ -81,12 +81,7 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	break;
 	case R_LARCH_SOP_PUSH_PCREL:
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
-	  {
-	    //XXX
-	    grub_loongarch64_sop_push (stack, sym_addr - (grub_uint64_t)place);
-	    /* 或者使用下面的行 */
-	    //grub_loongarch64_sop_push (stack, sym_addr - *place);
-	  }
+	  grub_loongarch64_sop_push (stack, sym_addr - (grub_uint64_t)place);
 	break;
 	GRUB_LOONGARCH64_RELOCATION (stack, place, sym_addr);
 	default:
