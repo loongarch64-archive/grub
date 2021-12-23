@@ -59,7 +59,7 @@ else
   AC_MSG_ERROR([${CC-cc} failed to produce assembly code])
 fi
 
-if $EGREP '(^|[^_[:alnum]])_func' conftest.s >/dev/null 2>&1; then
+if $EGREP '(^|[^_[:alnum:]])_func' conftest.s >/dev/null 2>&1; then
   HAVE_ASM_USCORE=1
   grub_cv_asm_uscore=yes
 else
