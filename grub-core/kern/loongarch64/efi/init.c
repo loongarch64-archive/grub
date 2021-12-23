@@ -23,7 +23,6 @@
 #include <grub/time.h>
 #include <grub/efi/efi.h>
 #include <grub/loader.h>
-#include <grub/machine/loongarch64.h>
 
 #define EFI_TIMER_PERIOD_MILLISECONDS(Milliseconds) ((grub_uint64_t)(Milliseconds * 10000))
 
