@@ -18,31 +18,37 @@
 
 #ifndef GRUB_LOONGARCH64_RELOC_H
 #define GRUB_LOONGARCH64_RELOC_H 1
-#include <grub/loongarch64/stack.h>
+#include <grub/types.h>
 
-void grub_loongarch64_sop_push		     (grub_stack_t* stack,
+struct grub_loongarch64_stack;
+typedef struct grub_loongarch64_stack* grub_loongarch64_stack_t;
+
+grub_loongarch64_stack_t grub_loongarch64_stack_new (int count);
+void grub_loongarch64_stack_destroy (grub_loongarch64_stack_t stack);
+
+void grub_loongarch64_sop_push		     (grub_loongarch64_stack_t stack,
 					      grub_int64_t offset);
-void grub_loongarch64_sop_sub		     (grub_stack_t* stack);
-void grub_loongarch64_sop_sl		     (grub_stack_t* stack);
-void grub_loongarch64_sop_sr		     (grub_stack_t* stack);
-void grub_loongarch64_sop_add		     (grub_stack_t* stack);
-void grub_loongarch64_sop_and		     (grub_stack_t* stack);
-void grub_loongarch64_sop_if_else	     (grub_stack_t* stack);
-void grub_loongarch64_sop_32_s_10_5	     (grub_stack_t* stack,
+void grub_loongarch64_sop_sub		     (grub_loongarch64_stack_t stack);
+void grub_loongarch64_sop_sl		     (grub_loongarch64_stack_t stack);
+void grub_loongarch64_sop_sr		     (grub_loongarch64_stack_t stack);
+void grub_loongarch64_sop_add		     (grub_loongarch64_stack_t stack);
+void grub_loongarch64_sop_and		     (grub_loongarch64_stack_t stack);
+void grub_loongarch64_sop_if_else	     (grub_loongarch64_stack_t stack);
+void grub_loongarch64_sop_32_s_10_5	     (grub_loongarch64_stack_t stack,
 					      grub_uint64_t *place);
-void grub_loongarch64_sop_32_u_10_12	     (grub_stack_t* stack,
+void grub_loongarch64_sop_32_u_10_12	     (grub_loongarch64_stack_t stack,
 					      grub_uint64_t *place);
-void grub_loongarch64_sop_32_s_10_12	     (grub_stack_t* stack,
+void grub_loongarch64_sop_32_s_10_12	     (grub_loongarch64_stack_t stack,
 					      grub_uint64_t *place);
-void grub_loongarch64_sop_32_s_10_16	     (grub_stack_t* stack,
+void grub_loongarch64_sop_32_s_10_16	     (grub_loongarch64_stack_t stack,
 					      grub_uint64_t *place);
-void grub_loongarch64_sop_32_s_10_16_s2	     (grub_stack_t* stack,
+void grub_loongarch64_sop_32_s_10_16_s2	     (grub_loongarch64_stack_t stack,
 					      grub_uint64_t *place);
-void grub_loongarch64_sop_32_s_5_20	     (grub_stack_t* stack,
+void grub_loongarch64_sop_32_s_5_20	     (grub_loongarch64_stack_t stack,
 					      grub_uint64_t *place);
-void grub_loongarch64_sop_32_s_0_5_10_16_s2  (grub_stack_t* stack,
+void grub_loongarch64_sop_32_s_0_5_10_16_s2  (grub_loongarch64_stack_t stack,
 					      grub_uint64_t *place);
-void grub_loongarch64_sop_32_s_0_10_10_16_s2 (grub_stack_t* stack,
+void grub_loongarch64_sop_32_s_0_10_10_16_s2 (grub_loongarch64_stack_t stack,
 					      grub_uint64_t *place);
 
 #define GRUB_LOONGARCH64_RELOCATION(STACK, PLACE, OFFSET)	\

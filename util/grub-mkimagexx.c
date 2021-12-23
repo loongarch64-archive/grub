@@ -785,8 +785,8 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
   struct grub_ia64_trampoline *tr = (void *) (pe_target + tramp_off);
   grub_uint64_t *gpptr = (void *) (pe_target + got_off);
   unsigned unmatched_adr_got_page = 0;
-  grub_stack_t* stack;
-  stack = grub_stack_new (16);
+  grub_loongarch64_stack_t stack;
+  stack = grub_loongarch64_stack_new (16);
 #define MASK19 ((1 << 19) - 1)
 #else
   grub_uint32_t *tr = (void *) (pe_target + tramp_off);
@@ -1449,7 +1449,7 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 	  }
       }
 #ifdef MKIMAGE_ELF64
-  grub_stack_destroy (stack);
+  grub_loongarch64_stack_destroy (stack);
 #endif
 }
 

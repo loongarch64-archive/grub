@@ -49,8 +49,8 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 			       Elf_Shdr *s, grub_dl_segment_t seg)
 {
   Elf_Rel *rel, *max;
-  grub_stack_t* stack;
-  stack = grub_stack_new (16);
+  grub_loongarch64_stack_t stack;
+  stack = grub_loongarch64_stack_new (16);
 
   for (rel = (Elf_Rel *) ((char *) ehdr + s->sh_offset),
 	 max = (Elf_Rel *) ((char *) rel + s->sh_size);
@@ -96,7 +96,7 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	  break;
 	}
     }
-  grub_stack_destroy (stack);
+  grub_loongarch64_stack_destroy (stack);
   return GRUB_ERR_NONE;
 }
 

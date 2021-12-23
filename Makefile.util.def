@@ -164,7 +164,6 @@ library = {
   common = grub-core/kern/arm/dl_helper.c;
   common = grub-core/kern/arm64/dl_helper.c;
   common = grub-core/kern/loongarch64/dl_helper.c;
-  common = grub-core/lib/loongarch64/stack.c;
   common = grub-core/lib/minilzo/minilzo.c;
   common = grub-core/lib/xzembed/xz_dec_bcj.c;
   common = grub-core/lib/xzembed/xz_dec_lzma2.c;
@@ -1273,23 +1272,6 @@ program = {
   ldadd = grub-core/lib/gnulib/libgnu.a;
   ldadd = '$(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
   condition = COND_HAVE_CXX;
-};
-
-program = {
-  testcase;
-  name = stack_test;
-  common = tests/stack_test.c;
-  common = tests/lib/unit_test.c;
-  common = grub-core/kern/list.c;
-  common = grub-core/kern/misc.c;
-  common = grub-core/tests/lib/test.c;
-  common = grub-core/lib/loongarch64/stack.c;
-  ldadd = libgrubmods.a;
-  ldadd = libgrubgcry.a;
-  ldadd = libgrubkern.a;
-  ldadd = grub-core/lib/gnulib/libgnu.a;
-  ldadd = '$(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM)';
-  condition = COND_loongarch64;
 };
 
 program = {
