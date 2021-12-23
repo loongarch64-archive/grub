@@ -343,7 +343,8 @@ kernel = {
   arm64 = kern/arm64/dl.c;
   arm64 = kern/arm64/dl_helper.c;
 
-  loongarch64 = kern/loongarch64/cache.S;
+  loongarch64 = kern/loongarch64/cache.c;
+  loongarch64 = kern/loongarch64/cache_flush.S;
   loongarch64 = kern/loongarch64/dl.c;
   loongarch64 = kern/loongarch64/dl_helper.c;
 
