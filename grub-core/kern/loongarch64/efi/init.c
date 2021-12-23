@@ -25,6 +25,10 @@
 #include <grub/loader.h>
 #include <grub/machine/loongarch64.h>
 
+#define EFI_TIMER_PERIOD_MICROSECONDS(Microseconds) ((grub_uint64_t)(Microseconds * 10))
+#define EFI_TIMER_PERIOD_MILLISECONDS(Milliseconds) ((grub_uint64_t)(Milliseconds * 10000))
+#define EFI_TIMER_PERIOD_SECONDS(Seconds)           ((grub_uint64_t)(Seconds* 10000000))
+
 static grub_uint64_t tmr;
 static grub_efi_event_t tmr_evt;
 
@@ -36,12 +40,10 @@ grub_efi_get_time_ms (void)
 
 static void
 grub_loongson_increment_timer (grub_efi_event_t event __attribute__ ((unused)),
-                 void *context __attribute__ ((unused)))
+			       void *context __attribute__ ((unused)))
 {
   tmr += 10;
 }
-
-
 
 void
 grub_machine_init (void)
@@ -52,8 +54,8 @@ grub_machine_init (void)
 
   b = grub_efi_system_table->boot_services;
   efi_call_5 (b->create_event, GRUB_EFI_EVT_TIMER | GRUB_EFI_EVT_NOTIFY_SIGNAL,
-              GRUB_EFI_TPL_CALLBACK, grub_loongson_increment_timer, NULL, &tmr_evt);
-  efi_call_3 (b->set_timer, tmr_evt, GRUB_EFI_TIMER_PERIODIC, 100000);
+	      GRUB_EFI_TPL_CALLBACK, grub_loongson_increment_timer, NULL, &tmr_evt);
+  efi_call_3 (b->set_timer, tmr_evt, GRUB_EFI_TIMER_PERIODIC, EFI_TIMER_PERIOD_MILLISECONDS(10));
 
   grub_install_get_time_ms (grub_efi_get_time_ms);
 }
