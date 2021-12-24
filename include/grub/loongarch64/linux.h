@@ -51,33 +51,23 @@ struct linux_loongarch64_kernel_header
 /* used to load ELF linux kernel */
 #include <grub/types.h>
 #include <grub/efi/api.h>
-#define GRUB_EFI_LOONGSON_SMBIOS_TABLE_GUID	\
-  { 0x4660f721, 0x2ec5, 0x416a, \
-    { 0x89, 0x9a, 0x43, 0x18, 0x02, 0x50, 0xa0, 0xc9 } \
-  }
+
+struct linux_kernel_params
+{
+  grub_uint32_t ramdisk_image;		/* initrd load address */
+  grub_uint32_t ramdisk_size;		/* initrd size */
+};
 
 #define GRUB_EFI_LOONGSON_MMAP_MAX 128
 typedef enum
-  {
+{
     GRUB_EFI_LOONGSON_SYSTEM_RAM = 1,
     GRUB_EFI_LOONGSON_MEMORY_RESERVED,
     GRUB_EFI_LOONGSON_ACPI_TABLE,
     GRUB_EFI_LOONGSON_ACPI_NVS,
     GRUB_EFI_LOONGSON_MAX_MEMORY_TYPE
-  }
+}
 grub_efi_loongarch64_memory_type;
-
-int EXPORT_FUNC(grub_efi_is_loongarch64) (void);
-
-grub_uint8_t
-EXPORT_FUNC(grub_efi_loongarch64_calculatesum8) (const grub_uint8_t *Buffer, grub_efi_uintn_t Length);
-
-grub_uint8_t
-EXPORT_FUNC(grub_efi_loongarch64_grub_calculatechecksum8) (const grub_uint8_t *Buffer, grub_efi_uintn_t Length);
-
-
-void *
-EXPORT_FUNC(grub_efi_loongarch64_get_boot_params) (void);
 
 typedef struct _extention_list_hdr{
   grub_uint64_t  signature;
@@ -112,7 +102,18 @@ typedef struct {
 }GRUB_PACKED
 vbios;
 
+int grub_efi_is_loongarch64 (void);
+
+grub_uint8_t
+grub_efi_loongarch64_calculatesum8 (const grub_uint8_t *Buffer, grub_efi_uintn_t Length);
+
+grub_uint8_t
+grub_efi_loongarch64_grub_calculatechecksum8 (const grub_uint8_t *Buffer, grub_efi_uintn_t Length);
+
+void *
+grub_efi_loongarch64_get_boot_params (void);
+
 grub_uint32_t
-EXPORT_FUNC (grub_efi_loongarch64_memmap_sort) (struct memmap array[], grub_uint32_t length, mem_map * bpmem, grub_uint32_t index, grub_uint32_t memtype);
+grub_efi_loongarch64_memmap_sort (struct memmap array[], grub_uint32_t length, mem_map * bpmem, grub_uint32_t index, grub_uint32_t memtype);
 
 #endif /* ! GRUB_LOONGARCH64_LINUX_HEADER */
