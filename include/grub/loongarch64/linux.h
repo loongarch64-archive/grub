@@ -76,7 +76,7 @@ struct _extention_list_hdr {
 
 struct bootparamsinterface {
     grub_uint64_t		signature;  /* {"B", "P", "I", "0", "1", ... } */
-    void	  		*systemtable;
+    grub_efi_system_table_t	*systemtable;
     struct _extention_list_hdr	*extlist;
     grub_uint64_t flags;
 }GRUB_PACKED;
@@ -91,18 +91,20 @@ struct loongsonlist_mem_map {
   } GRUB_PACKED map[GRUB_LOONGSON3_BOOT_MEM_MAP_MAX];
 }GRUB_PACKED;
 
-int grub_efi_is_loongarch64 (void);
-
 grub_uint8_t
 grub_efi_loongarch64_calculatesum8 (const grub_uint8_t *Buffer, grub_efi_uintn_t Length);
 
 grub_uint8_t
 grub_efi_loongarch64_grub_calculatechecksum8 (const grub_uint8_t *Buffer, grub_efi_uintn_t Length);
 
-void *
-grub_efi_loongarch64_get_boot_params (void);
+int
+grub_efi_loongarch64_get_boot_params (struct bootparamsinterface **boot_params);
 
 grub_uint32_t
-grub_efi_loongarch64_memmap_sort (struct memmap array[], grub_uint32_t length, struct loongsonlist_mem_map* bpmem, grub_uint32_t index, grub_uint32_t memtype);
+grub_efi_loongarch64_memmap_sort (struct memmap array[],
+				  grub_uint32_t length,
+				  struct loongsonlist_mem_map* bpmem,
+				  grub_uint32_t index,
+				  grub_uint32_t memtype);
 
 #endif /* ! GRUB_LOONGARCH64_LINUX_HEADER */
