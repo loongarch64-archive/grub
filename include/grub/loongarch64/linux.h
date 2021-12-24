@@ -58,49 +58,38 @@ struct linux_kernel_params
   grub_uint32_t ramdisk_size;		/* initrd size */
 };
 
-#define GRUB_EFI_LOONGSON_MMAP_MAX 128
-typedef enum
-{
-    GRUB_EFI_LOONGSON_SYSTEM_RAM = 1,
-    GRUB_EFI_LOONGSON_MEMORY_RESERVED,
-    GRUB_EFI_LOONGSON_ACPI_TABLE,
-    GRUB_EFI_LOONGSON_ACPI_NVS,
-    GRUB_EFI_LOONGSON_MAX_MEMORY_TYPE
-}
-grub_efi_loongarch64_memory_type;
+/* From arch/loongarch/include/asm/mach-loongson64/boot_param.h */
+#define GRUB_LOONGSON3_BOOT_MEM_MAP_MAX 128
+#define GRUB_ADDRESS_TYPE_SYSRAM	1
+#define GRUB_ADDRESS_TYPE_RESERVED	2
+#define GRUB_ADDRESS_TYPE_ACPI		3
+#define GRUB_ADDRESS_TYPE_NVS		4
+#define GRUB_ADDRESS_TYPE_PMEM		5
 
-typedef struct _extention_list_hdr{
-  grub_uint64_t  signature;
-  grub_uint32_t  length;
-  grub_uint8_t   revision;
-  grub_uint8_t   checksum;
-  struct  _extention_list_hdr *next;
-}GRUB_PACKED
-ext_list;
+struct _extention_list_hdr {
+    grub_uint64_t		signature;
+    grub_uint32_t  		length;
+    grub_uint8_t   		revision;
+    grub_uint8_t   		checksum;
+    struct _extention_list_hdr *next;
+} GRUB_PACKED;
 
-typedef struct bootparamsinterface {
-  grub_uint64_t           signature;    //{'B', 'P', 'I', '_', '0', '_', '1'}
-  grub_efi_system_table_t *systemtable;
-  ext_list         *extlist;
-}GRUB_PACKED
-bootparamsinterface;
+struct bootparamsinterface {
+    grub_uint64_t		signature;  /* {"B", "P", "I", "0", "1", ... } */
+    void	  		*systemtable;
+    struct _extention_list_hdr	*extlist;
+    grub_uint64_t flags;
+}GRUB_PACKED;
 
-typedef struct {
-  ext_list  header;         //  {'M', 'E', 'M'}
-  grub_uint8_t mapcount;
-  struct GRUB_PACKED memmap {
+struct loongsonlist_mem_map {
+  struct _extention_list_hdr header;	/* {"M", "E", "M"} */
+  grub_uint8_t		     map_count;
+  struct memmap {
     grub_uint32_t memtype;
     grub_uint64_t memstart;
     grub_uint64_t memsize;
-  } map[GRUB_EFI_LOONGSON_MMAP_MAX];
-}GRUB_PACKED
-mem_map;
-
-typedef struct {
-  ext_list header;          // {VBIOS}
-  grub_uint64_t  vbiosaddr;
-}GRUB_PACKED
-vbios;
+  } GRUB_PACKED map[GRUB_LOONGSON3_BOOT_MEM_MAP_MAX];
+}GRUB_PACKED;
 
 int grub_efi_is_loongarch64 (void);
 
@@ -114,6 +103,6 @@ void *
 grub_efi_loongarch64_get_boot_params (void);
 
 grub_uint32_t
-grub_efi_loongarch64_memmap_sort (struct memmap array[], grub_uint32_t length, mem_map * bpmem, grub_uint32_t index, grub_uint32_t memtype);
+grub_efi_loongarch64_memmap_sort (struct memmap array[], grub_uint32_t length, struct loongsonlist_mem_map* bpmem, grub_uint32_t index, grub_uint32_t memtype);
 
 #endif /* ! GRUB_LOONGARCH64_LINUX_HEADER */
