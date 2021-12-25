@@ -16,6 +16,8 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <grub/dl.h>
+
 	.file	"setjmp.S"
 
 GRUB_MOD_LICENSE "GPLv3+"
