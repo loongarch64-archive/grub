@@ -19,32 +19,33 @@
 
 #include <grub/symbol.h>
 
-	.p2align	4
+.p2align	4
 
 VARIABLE (grub_relocator_forward_start)
 
 copycont1:
-	ld.d	$a7, $a4, 0
-	st.d	$a7, $a5, 0
-	addi.d	$a4, $a4, 8
-	addi.d 	$a6, $a6, -8
-	addi.d 	$a5, $a5, 8
-	bne    	$a6, $zero, copycont1
+  ld.d   $a7, $a4, 0
+  st.d   $a7, $a5, 0
+  addi.d $a4, $a4, 8
+  addi.d $a6, $a6, -8
+  addi.d $a5, $a5, 8
+  bne    $a6, $zero, copycont1
 
 VARIABLE (grub_relocator_forward_end)
 
 VARIABLE (grub_relocator_backward_start)
 
-	add.d	$a5, $a5, $a6
-	add.d 	$a4, $a4, $a6
-	addi.d	$a5, $a5, -8
-	addi.d 	$a4, $a4, -8
+  add.d  $a5, $a5, $a6
+  add.d  $a4, $a4, $a6
+  addi.d $a5, $a5, -8
+  addi.d $a4, $a4, -8
+
 copycont2:
-	ld.w	$a7, $a4, 0
-	st.w 	$a7, $a5, 0
-	addi.d	$a4, $a4, -8
-	addi.d 	$a6, $a6, -8
-	addi.d 	$a5, $a5, -8
-	bne	$a6, $zero, copycont2
+  ld.w   $a7, $a4, 0
+  st.w   $a7, $a5, 0
+  addi.d $a4, $a4, -8
+  addi.d $a6, $a6, -8
+  addi.d $a5, $a5, -8
+  bne    $a6, $zero, copycont2
 
 VARIABLE (grub_relocator_backward_end)
