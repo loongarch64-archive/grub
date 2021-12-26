@@ -52,10 +52,15 @@ struct linux_loongarch64_kernel_header
 #include <grub/types.h>
 #include <grub/efi/api.h>
 
-struct linux_kernel_params
+struct linux_loongarch64_kernel_params
 {
-  grub_uint32_t ramdisk_image;		/* initrd load address */
-  grub_uint32_t ramdisk_size;		/* initrd size */
+  grub_addr_t kernel_addr; 		/* kernel entry address */
+  grub_size_t kernel_size;		/* kernel size */
+  grub_addr_t ramdisk_addr;		/* initrd load address */
+  grub_size_t ramdisk_size;		/* initrd size */
+  int         linux_argc;
+  grub_addr_t linux_argv;
+  void*       linux_args;
 };
 
 /* From arch/loongarch/include/asm/mach-loongson64/boot_param.h */
@@ -82,13 +87,13 @@ struct bootparamsinterface {
 }GRUB_PACKED;
 
 struct loongsonlist_mem_map {
-  struct _extention_list_hdr header;	/* {"M", "E", "M"} */
-  grub_uint8_t		     map_count;
-  struct memmap {
-    grub_uint32_t memtype;
-    grub_uint64_t memstart;
-    grub_uint64_t memsize;
-  } GRUB_PACKED map[GRUB_LOONGSON3_BOOT_MEM_MAP_MAX];
+    struct _extention_list_hdr	header;	/* {"M", "E", "M"} */
+    grub_uint8_t		map_count;
+    struct memmap {
+	grub_uint32_t memtype;
+	grub_uint64_t memstart;
+	grub_uint64_t memsize;
+    } GRUB_PACKED map[GRUB_LOONGSON3_BOOT_MEM_MAP_MAX];
 }GRUB_PACKED;
 
 grub_uint8_t

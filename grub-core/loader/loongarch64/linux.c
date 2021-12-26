@@ -16,26 +16,34 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/efi/api.h>
+#include <grub/charset.h>
+#include <grub/command.h>
+#include <grub/err.h>
+#include <grub/linux.h>
+#include <grub/loader.h>
+#include <grub/memory.h>
+#include <grub/misc.h>
+#include <grub/mm.h>
+#include <grub/types.h>
+#include <grub/command.h>
+#include <grub/cpu/linux.h>
+#include <grub/cpu/relocator.h>
+#include <grub/dl.h>
+//#include <grub/efi/api.h>
 #include <grub/efi/efi.h>
+#include <grub/efi/memory.h>
 #include <grub/elf.h>
 #include <grub/elfload.h>
-#include <grub/loader.h>
-#include <grub/dl.h>
-#include <grub/mm.h>
-#include <grub/misc.h>
-#include <grub/command.h>
-#include <grub/cpu/relocator.h>
-#include <grub/memory.h>
 #include <grub/i18n.h>
 #include <grub/lib/cmdline.h>
-#include <grub/linux.h>
-#include <grub/cpu/linux.h>
-#include <grub/efi/memory.h>
+#include <grub/lib/hexdump.h>
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
 //#define ENABLE_EFI_KERNEL 1
+
+#define ENTER_FUNCTION  grub_dprintf ("linux", "DDDEEEBBBUUUGGG enter %s\n", __FUNCTION__);
+#define LEAVE_FUNCTION  grub_dprintf ("linux", "DDDEEEBBBUUUGGG leave %s\n", __FUNCTION__);
 
 typedef  unsigned long size_t;
 
@@ -47,12 +55,7 @@ static grub_uint32_t tmp_index = 0;
 static grub_size_t linux_size;
 
 static struct grub_relocator *relocator;
-static grub_addr_t target_addr, entry_addr;
-static int linux_argc;
-static grub_uint8_t *linux_args_addr;
-static grub_off_t rd_addr_arg_off, rd_size_arg_off;
-static grub_off_t initrd_addr_arg_off;
-static int initrd_loaded = 0;
+static grub_addr_t entry_addr;
 
 grub_uint64_t tempMemsize = 0;
 grub_uint32_t free_index = 0;
@@ -61,7 +64,11 @@ grub_uint32_t acpi_table_index = 0;
 grub_uint32_t acpi_nvs_index = 0;
 
 /* Begin from loongarch64.c */
-
+static struct linux_loongarch64_kernel_params kernel_params;
+static void* linux_args_addr;
+//static kernel_is_efi = 0;
+//static char *linux_args; /* */
+//static grub_uint32_t cmdline_size;
 
 //struct bootparamsinterface* boot_params;
 int
@@ -119,11 +126,11 @@ grub_efi_loongarch64_grub_calculatechecksum8 (const grub_uint8_t *buffer, grub_e
 }
 
 grub_uint32_t
-grub_efi_loongarch64_memmap_sort(struct memmap array[],
-				 grub_uint32_t length,
-				 struct loongsonlist_mem_map* bpmem,
-				 grub_uint32_t index,
-				 grub_uint32_t memtype)
+grub_efi_loongarch64_memmap_sort (struct memmap array[],
+				  grub_uint32_t length,
+				  struct loongsonlist_mem_map* bpmem,
+				  grub_uint32_t index,
+				  grub_uint32_t memtype)
 {
   grub_uint64_t tempmemsize = 0;
   grub_uint32_t j = 0;
@@ -205,87 +212,178 @@ find_mmap_size (void)
      later, and EFI itself may allocate more.  */
   mmap_size += (1 << 12);
 
-  return page_align (mmap_size);
+  return ALIGN_UP(mmap_size, 4096);
+}
+
+#define DEBUG_INFO grub_dprintf ("linux", "DEBUG %d: %s()\n", __LINE__, __FUNCTION__);
+static void* grub_linux_make_argv (void)
+{
+  ENTER_FUNCTION
+  int size;
+  grub_uint64_t *linux_argv;
+  char *args, *p, *linux_args;
+  int i, argc;
+  grub_err_t err;
+
+  argc = kernel_params.linux_argc;
+  args = kernel_params.linux_args;
+
+
+  /* new size */
+  p = args;
+  size = (argc + 1) * sizeof (grub_uint64_t);  /* orig arguments */
+  for (i = 0; i < argc; i++)
+    {
+      size += ALIGN_UP (grub_strlen (p) + 1, 4);
+      p += grub_strlen (p) + 1;
+    }
+
+  size += ALIGN_UP (sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"), 4) \
+	  + ALIGN_UP (sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"), 4) \
+	  + ALIGN_UP (sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"), 4);
+  size = ALIGN_UP (size, 8);
+
+  /* alloc memory */
+  {
+    grub_relocator_chunk_t ch;
+    err = grub_relocator_alloc_chunk_align (relocator, &ch,
+					    0, (0xffffffff - size) + 1,
+					    size, 8,
+					    GRUB_RELOCATOR_PREFERENCE_LOW, 0);
+    if (err)
+      return NULL;
+    linux_args_addr = get_virtual_current_address (ch);
+  }
+
+  /* 64位指针指向开始地址 */
+  linux_argv = linux_args_addr;
+  linux_args = (char *) (linux_argv + (argc + 1 + 3)); /* 字符串指针, 指向变量的起始地址  */
+
+  p = args;
+  for (i = 0; i < argc; i++)
+    {
+      grub_memcpy (linux_args, p, grub_strlen (p) + 1);
+      *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
+      linux_args += ALIGN_UP (grub_strlen (p) + 1, 4);
+      p += grub_strlen (p) + 1;
+    }
+
+  /* rd_start */
+  grub_snprintf (linux_args,
+		 sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"),
+		 "rd_start=0x%lx",
+		 (grub_uint64_t) kernel_params.ramdisk_addr);
+  *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
+  linux_args += ALIGN_UP (sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"), 4);
+  linux_argv++;
+  kernel_params.linux_argc++;
+
+  /* rd_size */
+  grub_snprintf (linux_args,
+		 sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"),
+		 "rd_size=0x%lx",
+		 (grub_uint64_t) kernel_params.ramdisk_size);
+  *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
+  linux_args += ALIGN_UP (sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"), 4);
+  linux_argv++;
+  kernel_params.linux_argc++;
+
+  /* initrd */
+  grub_snprintf (linux_args,
+		 sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"),
+		 "initrd=0x%lx,0x%lx",
+		 ((grub_uint64_t) kernel_params.ramdisk_addr & 0xffffffff),
+		 (grub_uint64_t) kernel_params.ramdisk_size);
+  *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
+  linux_args += ALIGN_UP (sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"), 4);
+  linux_argv++;
+  kernel_params.linux_argc++;
+
+  /* Reserve space for initrd arguments.  */
+  *linux_argv = 0;
+
+  LEAVE_FUNCTION
+  return linux_args_addr;
 }
 
 static grub_err_t
 grub_linux_boot (void)
 {
+  ENTER_FUNCTION
   struct grub_relocator64_state state;
   grub_int8_t checksum = 0;
   grub_efi_memory_descriptor_t * lsdesc = NULL;
   grub_uint32_t j = 0;
   grub_uint32_t t = 0;
+  grub_err_t err;
 
   grub_memset (&state, 0, sizeof (state));
 
+  DEBUG_INFO;
+  //grub_linux_loongarch64_args ();
+  grub_linux_make_argv ();
+  DEBUG_INFO;
   /* Boot the kernel.  */
-  state.gpr[1] = entry_addr;
-  state.gpr[4] = linux_argc;
-  state.gpr[5] = (grub_addr_t) linux_args_addr;
+  state.gpr[1] = kernel_params.kernel_addr;  /* ra */
+  state.gpr[4] = kernel_params.linux_argc;   /* a0 = argc */
+  //state.gpr[5] = (grub_addr_t) linux_args_addr; /* a1 = args */
+  DEBUG_INFO;
+  state.gpr[5] = (grub_addr_t) linux_args_addr; //grub_linux_loongarch64_args ();
+  DEBUG_INFO;
 
-//  if(grub_efi_is_loongarch64 ())
-//  {
+  /* Loongson boot params table */
   grub_efi_uintn_t mmap_size;
   grub_efi_uintn_t desc_size;
   grub_efi_memory_descriptor_t *mmap_buf;
-  grub_err_t err;
   struct bootparamsinterface *boot_params = NULL;
-  //    grub_efi_uint8_t new_interface_flag = 0;
-  struct loongsonlist_mem_map *loongson_mem_map = NULL;
-  //    char *p = NULL;
 
   struct memmap reserve_mem[GRUB_LOONGSON3_BOOT_MEM_MAP_MAX];
   struct memmap free_mem[GRUB_LOONGSON3_BOOT_MEM_MAP_MAX];
   struct memmap acpi_table_mem[GRUB_LOONGSON3_BOOT_MEM_MAP_MAX];
   struct memmap acpi_nvs_mem[GRUB_LOONGSON3_BOOT_MEM_MAP_MAX];
 
-  grub_memset(reserve_mem, 0, sizeof(struct memmap) * GRUB_LOONGSON3_BOOT_MEM_MAP_MAX);
-  grub_memset(free_mem, 0, sizeof(struct memmap) * GRUB_LOONGSON3_BOOT_MEM_MAP_MAX);
-  grub_memset(acpi_table_mem, 0, sizeof(struct memmap) * GRUB_LOONGSON3_BOOT_MEM_MAP_MAX);
-  grub_memset(acpi_nvs_mem, 0, sizeof(struct memmap) * GRUB_LOONGSON3_BOOT_MEM_MAP_MAX);
+  grub_memset (reserve_mem, 0, sizeof(struct memmap) * GRUB_LOONGSON3_BOOT_MEM_MAP_MAX);
+  grub_memset (free_mem, 0, sizeof(struct memmap) * GRUB_LOONGSON3_BOOT_MEM_MAP_MAX);
+  grub_memset (acpi_table_mem, 0, sizeof(struct memmap) * GRUB_LOONGSON3_BOOT_MEM_MAP_MAX);
+  grub_memset (acpi_nvs_mem, 0, sizeof(struct memmap) * GRUB_LOONGSON3_BOOT_MEM_MAP_MAX);
 
+  DEBUG_INFO;
   if (grub_efi_loongarch64_get_boot_params (&boot_params) == 0)
     {
+  DEBUG_INFO;
       grub_printf("not find param\n");
       return -1;
     } else {
+  DEBUG_INFO;
 	grub_printf("yetist: find param\n");
     }
+  DEBUG_INFO;
 
-  //p = (char *)&(boot_params->signature);
-  //if(grub_strncmp(p, "BPI", 3) == 0)
-  //{
   /* Check extlist headers */
-  struct _extention_list_hdr* listpointer = NULL;
-  listpointer = boot_params->extlist;
-  for( ;listpointer != NULL; listpointer = listpointer->next)
+  struct loongsonlist_mem_map *loongson_mem_map = NULL;
+  struct _extention_list_hdr *listpointer = NULL;
+  for (listpointer = boot_params->extlist; listpointer != NULL; listpointer = listpointer->next)
     {
-      char *pl= (char *)&(listpointer->signature);
-      if(grub_strncmp(pl, "MEM", 3) == 0)
+      char *p = (char *) &(listpointer->signature);
+      if(grub_strncmp(p, "MEM", 3) == 0)
 	{
-	  loongson_mem_map = (struct loongsonlist_mem_map*)listpointer;
+	  loongson_mem_map = (struct loongsonlist_mem_map*) listpointer;
 	}
     }
 
-  //      new_interface_flag = 1;
-  grub_dprintf("linux", "get new parameter interface\n");
-  //}
-
-  state.gpr[6] = (grub_uint64_t) boot_params;
+  state.gpr[6] = (grub_uint64_t) boot_params; /* a2 = envp */
   mmap_size = find_mmap_size ();
   if (! mmap_size)
     return grub_errno;
-  mmap_buf = grub_efi_allocate_any_pages (page_align (mmap_size) >> 12);
+  mmap_buf = grub_efi_allocate_any_pages (GRUB_EFI_BYTES_TO_PAGES (mmap_size));
   if (! mmap_buf)
     return grub_error (GRUB_ERR_IO, "cannot allocate memory map");
+
   err = grub_efi_finish_boot_services (&mmap_size, mmap_buf, NULL,
 				       &desc_size, NULL);
   if (err)
     return err;
 
-  //    if(new_interface_flag)
-  //    {
   if (!mmap_buf || !mmap_size || !desc_size)
     return -1;
   tmp_index = loongson_mem_map -> map_count;
@@ -364,19 +462,17 @@ grub_linux_boot (void)
   grub_uint64_t loongarch_addr;
   asm volatile ("csrrd %0, 0x181" : "=r" (loongarch_addr));
   if((loongarch_addr & 0xff00000000000000) == 0x9000000000000000){
-      tmp_index = grub_efi_loongarch64_memmap_sort(reserve_mem, reserve_index, loongson_mem_map, tmp_index, GRUB_ADDRESS_TYPE_RESERVED);
+      tmp_index = grub_efi_loongarch64_memmap_sort (reserve_mem, reserve_index, loongson_mem_map, tmp_index, GRUB_ADDRESS_TYPE_RESERVED);
   }else{
-      tmp_index = grub_efi_loongarch64_memmap_sort(reserve_mem, reserve_index, loongson_mem_map, tmp_index, GRUB_ADDRESS_TYPE_RESERVED + 1);
+      tmp_index = grub_efi_loongarch64_memmap_sort (reserve_mem, reserve_index, loongson_mem_map, tmp_index, GRUB_ADDRESS_TYPE_RESERVED + 1);
   }
 
   loongson_mem_map->map_count = tmp_index;
   loongson_mem_map->header.checksum = 0;
 
-  checksum = grub_efi_loongarch64_grub_calculatechecksum8((grub_uint8_t *) loongson_mem_map,
-							  loongson_mem_map->header.length);
+  checksum = grub_efi_loongarch64_grub_calculatechecksum8 ((grub_uint8_t *) loongson_mem_map,
+							   loongson_mem_map->header.length);
   loongson_mem_map->header.checksum = checksum;
-  //    }
-  //  }
 
   state.jumpreg = 1;
   grub_relocator64_boot (relocator, state);
@@ -387,28 +483,36 @@ grub_linux_boot (void)
 static grub_err_t
 grub_linux_unload (void)
 {
+  grub_dprintf ("linux", "enter grub_linux_unload\n");
   grub_relocator_unload (relocator);
   grub_dl_unref (my_mod);
 
   loaded = 0;
 
+  grub_dprintf ("linux", "leave grub_linux_unload\n");
   return GRUB_ERR_NONE;
 }
 
 static grub_err_t
-grub_linux_load64 (grub_elf_t elf, const char *filename)
+grub_linux_load_elf64 (grub_elf_t elf, const char *filename)
 {
   Elf64_Addr base;
   grub_err_t err;
   grub_uint8_t *playground;
+  grub_addr_t phys_addr;
+  grub_dprintf ("linux", "enter grub_linux_load_elf64\n");
 
   /* Linux's entry point incorrectly contains a virtual address.  */
   entry_addr = elf->ehdr.ehdr64.e_entry;
   linux_size = grub_elf64_size (elf, &base, 0);
 
+  kernel_params.kernel_addr = entry_addr; //playground - base;
+  kernel_params.kernel_size = linux_size;
+
   if (linux_size == 0)
     return grub_errno;
-  target_addr = base;
+
+  phys_addr = base;
   linux_size = ALIGN_UP (base + linux_size - base, 8);
 
   relocator = grub_relocator_new ();
@@ -418,13 +522,15 @@ grub_linux_load64 (grub_elf_t elf, const char *filename)
   {
     grub_relocator_chunk_t ch;
     err = grub_relocator_alloc_chunk_addr (relocator, &ch,
-					   grub_vtop ((void *) target_addr),
+					   grub_vtop ((void *) phys_addr),
 					   linux_size);
     if (err)
       return err;
     playground = get_virtual_current_address (ch);
   }
 
+
+  grub_dprintf ("linux", "leave %s\n", __FUNCTION__);
   /* Now load the segments into the area we claimed.  */
   return grub_elf64_load (elf, filename, playground - base, GRUB_ELF_LOAD_FLAGS_NONE, 0, 0);
 }
@@ -433,15 +539,20 @@ static grub_err_t
 grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 		int argc, char *argv[])
 {
-  grub_elf_t elf = 0;
-  int size;
-  int i;
-  grub_uint64_t *linux_argv;
-  char *linux_args;
+  grub_dprintf ("linux", "enter %s\n", __FUNCTION__);
+  grub_elf_t elf = NULL;
   grub_err_t err;
+  int i;
+  char *p;
+  grub_uint32_t cmdline_size;
+
+  grub_dl_ref (my_mod);
 
   if (argc == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
+    {
+      grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
+      goto fail;
+    }
 
   elf = grub_elf_open (argv[0],GRUB_FILE_TYPE_LINUX_KERNEL);
   if (! elf)
@@ -449,100 +560,89 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 
   if (elf->ehdr.ehdr32.e_type != ET_EXEC)
     {
-      grub_elf_close (elf);
       return grub_error (GRUB_ERR_UNKNOWN_OS,
 			 N_("this ELF file is not of the right type"));
+      goto fail;
     }
 
   /* Release the previously used memory.  */
   grub_loader_unset ();
   loaded = 0;
 
-  /* For arguments.  */
-  linux_argc = argc;
-  /* Main arguments.  */
-  size = (linux_argc) * sizeof (grub_uint64_t);
-  /* Initrd address/size and initrd  */
-  size += 3 * sizeof (grub_uint64_t);
-  /* NULL terminator.  */
-  size += sizeof (grub_uint64_t);
-  /* First argument is always "a0".  */
-  size += ALIGN_UP (sizeof ("a0"), 4);
-  /* Normal arguments.  */
-  for (i = 1; i < argc; i++)
-    size += ALIGN_UP (grub_strlen (argv[i]) + 1, 4);
-
-  /* rd arguments.  */
-  size += ALIGN_UP (sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"), 4);
-  size += ALIGN_UP (sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"), 4);
-  size += ALIGN_UP (sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"), 4);
-
-  size = ALIGN_UP (size, 8);
-
   if (grub_elf_is_elf64 (elf))
-    err = grub_linux_load64 (elf, argv[0]);
-  else
-    err = grub_error (GRUB_ERR_BAD_OS, N_("invalid arch-dependent ELF magic"));
-
-  grub_elf_close (elf);
+    err = grub_linux_load_elf64 (elf, argv[0]);
 
   if (err)
-    return err;
+      goto fail;
 
-  {
-    grub_relocator_chunk_t ch;
-    err = grub_relocator_alloc_chunk_align (relocator, &ch,
-					    0, (0xffffffff - size) + 1,
-					    size, 8,
-					    GRUB_RELOCATOR_PREFERENCE_LOW, 0);
-    if (err)
-      return err;
-    linux_args_addr = get_virtual_current_address (ch);
-  }
-
-  linux_argv = (void*) linux_args_addr;
-  linux_args = (char *) (linux_argv + (linux_argc + 1 + 3));
-
-  grub_memcpy (linux_args, "a0", sizeof ("a0"));
-  *linux_argv = (grub_uint64_t) linux_args;
-  linux_argv++;
-  linux_args += ALIGN_UP (sizeof ("a0"), 4);
-
-  for (i = 1; i < argc; i++)
+#ifdef ENABLE_EFI_KERNEL
+  cmdline_size = grub_loader_cmdline_size (argc, argv) + sizeof (LINUX_IMAGE);
+  linux_args = grub_malloc (cmdline_size);
+  if (!linux_args)
     {
-      grub_memcpy (linux_args, argv[i], grub_strlen (argv[i]) + 1);
-      *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
-      linux_argv++;
-      linux_args += ALIGN_UP (grub_strlen (argv[i]) + 1, 4);
+      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+      goto fail;
+    }
+  grub_memcpy (linux_args, LINUX_IMAGE, sizeof (LINUX_IMAGE));
+  err = grub_create_loader_cmdline (argc, argv,
+				    linux_args + sizeof (LINUX_IMAGE) - 1,
+				    cmdline_size,
+				    GRUB_VERIFY_KERNEL_CMDLINE);
+#endif
+  if (err)
+      goto fail;
+
+  if (grub_errno == GRUB_ERR_NONE)
+    {
+      grub_loader_set (grub_linux_boot, grub_linux_unload, 0);
+      loaded = 1;
     }
 
-  /* Reserve space for rd arguments.  */
-  rd_addr_arg_off = (grub_uint8_t *) linux_args - linux_args_addr;
-  linux_args += ALIGN_UP (sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"), 4);
-  *linux_argv = 0;
-  linux_argv++;
+  /* save args from linux cmdline */
+  cmdline_size = grub_loader_cmdline_size (argc, argv) + sizeof (LINUX_IMAGE);
+  kernel_params.linux_argc = argc;
+  kernel_params.linux_args = grub_malloc (cmdline_size);
 
-  rd_size_arg_off = (grub_uint8_t *) linux_args - linux_args_addr;
-  linux_args += ALIGN_UP (sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"), 4);
-  *linux_argv = 0;
-  linux_argv++;
+  if (!kernel_params.linux_args)
+    {
+      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+      goto fail;
+    }
+  p = kernel_params.linux_args;
+  grub_memcpy (p, LINUX_IMAGE, sizeof (LINUX_IMAGE));
+  p += sizeof (LINUX_IMAGE) - 1;
+  for (i=0; i < argc; i++)
+    {
+      grub_memcpy (p, argv[i], sizeof(argv[i]));
+      p += sizeof(argv[i]);
+    }
 
-  /* Reserve space for initrd arguments.  */
-  initrd_addr_arg_off = (grub_uint8_t *) linux_args - linux_args_addr;
-  linux_args += ALIGN_UP (sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"), 4);
-  *linux_argv = 0;
-  linux_argv++;
+fail:
+  if (elf != NULL)
+    grub_elf_close (elf);
+#ifdef ENABLE_EFI_KERNEL
+  if (file)
+    grub_file_close (file);
 
-  *linux_argv = 0;
+  if (grub_errno != GRUB_ERR_NONE)
+    {
+      grub_dl_unref (my_mod);
+      loaded = 0;
+    }
 
-  grub_loader_set (grub_linux_boot, grub_linux_unload, 0);
-  initrd_loaded = 0;
-  loaded = 1;
-  grub_dl_ref (my_mod);
+  if (linux_args && !loaded)
+    grub_free (linux_args);
 
-  return GRUB_ERR_NONE;
+  if (kernel_addr && !loaded)
+    grub_efi_free_pages ((grub_addr_t) kernel_addr,
+			 GRUB_EFI_BYTES_TO_PAGES (kernel_size));
+#endif
+
+  grub_dprintf ("linux", "leave %s\n", __FUNCTION__);
+  return grub_errno;
 }
 
+#ifdef ENABLE_EFI_KERNEL
 #define INITRD_MAX_ADDRESS_OFFSET (32ULL * 1024 * 1024 * 1024)
 static void *
 allocate_initrd_mem (int initrd_pages)
@@ -558,13 +658,14 @@ allocate_initrd_mem (int initrd_pages)
 				       GRUB_EFI_ALLOCATE_MAX_ADDRESS,
 				       GRUB_EFI_LOADER_DATA);
 }
+#endif
 
 static grub_err_t
 grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
 		 int argc, char *argv[])
 {
   struct grub_linux_initrd_context initrd_ctx = { 0, 0, 0 };
-  grub_size_t initrd_size, initrd_pages;
+  grub_size_t initrd_size;
   void *initrd_mem = NULL;
 
   if (argc == 0)
@@ -579,11 +680,6 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
       goto fail;
     }
 
-#if 0
-  if (initrd_loaded)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "only one initrd command can be issued.");
-#endif
-
   if (grub_initrd_init (argc, argv, &initrd_ctx))
     goto fail;
 
@@ -591,15 +687,11 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   grub_dprintf ("linux", "Loading initrd\n");
 
 #ifdef ENABLE_EFI_KERNEL
+  //grub_size_t initrd_pages;
   initrd_pages = (GRUB_EFI_BYTES_TO_PAGES (initrd_size));
   initrd_mem = allocate_initrd_mem (initrd_pages);
-
-  if (!initrd_mem)
-    {
-      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
-      goto fail;
-    }
 #else
+  {
   grub_relocator_chunk_t ch;
   grub_err_t err;
   err = grub_relocator_alloc_chunk_align (relocator, &ch,
@@ -610,40 +702,22 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   if (err)
     goto fail;
   initrd_mem = get_virtual_current_address (ch);
+  }
 #endif
+
+  if (!initrd_mem)
+    {
+      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+      goto fail;
+    }
 
   if (grub_initrd_load (&initrd_ctx, argv, initrd_mem))
     goto fail;
 
-  grub_addr_t initrd_start;
-  grub_addr_t initrd_end;
-
-  initrd_start = (grub_addr_t) initrd_mem;
-  initrd_end = initrd_start + initrd_size;
-  grub_dprintf ("linux", "[addr=%p, size=0x%"PRIuGRUB_SIZE"]\n",
-		(void *) initrd_start, initrd_size);
-
-  grub_snprintf ((char *) linux_args_addr + rd_addr_arg_off,
-		 sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"), "rd_start=0x%lx",
-		 (grub_uint64_t) initrd_start);
-  ((grub_uint64_t *) linux_args_addr)[linux_argc]
-    = (grub_uint64_t) ((grub_addr_t) linux_args_addr + rd_addr_arg_off);
-  linux_argc++;
-
-  grub_snprintf ((char *) linux_args_addr + rd_size_arg_off,
-		 sizeof ("rd_size=0xXXXXXXXXXXXXXXXXX"), "rd_size=0x%lx",
-		 (grub_uint64_t) initrd_size);
-  ((grub_uint64_t *) linux_args_addr)[linux_argc]
-    = (grub_uint64_t) ((grub_addr_t) linux_args_addr + rd_size_arg_off);
-  linux_argc++;
-
-
-  grub_snprintf ((char *) linux_args_addr + initrd_addr_arg_off,
-		 sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"), "initrd=0x%lx,0x%lx",
-		 ((grub_uint64_t) initrd_start & 0xffffffff), (grub_uint64_t) initrd_size);
-  ((grub_uint64_t *) linux_args_addr)[linux_argc]
-    = (grub_uint64_t) ((grub_addr_t) linux_args_addr + initrd_addr_arg_off);
-  linux_argc++;
+  kernel_params.ramdisk_addr = (grub_addr_t) initrd_mem;
+  kernel_params.ramdisk_size = initrd_size;
+  grub_dprintf ("linux", "ramdisk [addr=%p, size=0x%lx]\n",
+		(void *) initrd_mem, initrd_size);
 
 fail:
   grub_initrd_close (&initrd_ctx);
