@@ -165,13 +165,6 @@ grub_efi_loongarch64_memmap_sort (struct memmap array[],
 }
 
 /* code end from loongarch64.c */
-
-static inline grub_size_t
-page_align (grub_size_t size)
-{
-  return (size + (1 << 12) - 1) & (~((1 << 12) - 1));
-}
-
 /* Find the optimal number of pages for the memory map. Is it better to
    move this code to efi/mm.c?  */
 static grub_efi_uintn_t
@@ -210,7 +203,7 @@ find_mmap_size (void)
      later, and EFI itself may allocate more.  */
   mmap_size += (1 << 12);
 
-  return page_align (mmap_size);
+  return ALIGN_UP(mmap_size, 4096);
 }
 
 static void* grub_linux_make_argv (void)
@@ -355,24 +348,22 @@ grub_linux_boot (void)
 
   /* Check extlist headers */
   struct _extention_list_hdr* listpointer = NULL;
-  listpointer = boot_params->extlist;
-  for( ;listpointer != NULL; listpointer = listpointer->next)
+  for (listpointer = boot_params->extlist; listpointer != NULL; listpointer = listpointer->next)
     {
-      char *pl= (char *)&(listpointer->signature);
-      if(grub_strncmp(pl, "MEM", 3) == 0)
+      char *p = (char *) &(listpointer->signature);
+      if(grub_strncmp(p, "MEM", 3) == 0)
 	{
-	  loongson_mem_map = (struct loongsonlist_mem_map*)listpointer;
+	  loongson_mem_map = (struct loongsonlist_mem_map*) listpointer;
 	}
     }
 
-  grub_dprintf("linux", "get new parameter interface\n");
-
-  state.gpr[6] = (grub_uint64_t) boot_params;
+  DEBUG_INFO;
+  state.gpr[6] = (grub_uint64_t) boot_params; /* a2 = envp */
   mmap_size = find_mmap_size ();
   if (! mmap_size)
     return grub_errno;
   DEBUG_INFO;
-  mmap_buf = grub_efi_allocate_any_pages (page_align (mmap_size) >> 12);
+  mmap_buf = grub_efi_allocate_any_pages (ALIGN_UP (mmap_size, 4096) >> 12);
   if (! mmap_buf)
     return grub_error (GRUB_ERR_IO, "cannot allocate memory map");
 
@@ -730,12 +721,6 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   //grub_size_t initrd_pages;
   initrd_pages = (GRUB_EFI_BYTES_TO_PAGES (initrd_size));
   initrd_mem = allocate_initrd_mem (initrd_pages);
-
-  if (!initrd_mem)
-    {
-      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
-      goto fail;
-    }
 #else
   {
   grub_relocator_chunk_t ch;
@@ -750,6 +735,12 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   initrd_mem = get_virtual_current_address (ch);
   }
 #endif
+
+  if (!initrd_mem)
+    {
+      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
+      goto fail;
+    }
 
   if (grub_initrd_load (&initrd_ctx, argv, initrd_mem))
     goto fail;
