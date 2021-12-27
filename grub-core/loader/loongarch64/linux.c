@@ -213,6 +213,9 @@ find_mmap_size (void)
   return ALIGN_UP(mmap_size, 4096);
 }
 
+static void*
+alloc_virtual_mem_addr (grub_size_t size, grub_size_t align, grub_err_t *err);
+
 static void* grub_linux_make_argv (void)
 {
   ENTER_FUNCTION
@@ -241,16 +244,7 @@ static void* grub_linux_make_argv (void)
   size = ALIGN_UP (size, 8);
 
   /* alloc memory */
-  {
-    grub_relocator_chunk_t ch;
-    err = grub_relocator_alloc_chunk_align (relocator, &ch,
-					    0, (0xffffffff - size) + 1,
-					    size, 8,
-					    GRUB_RELOCATOR_PREFERENCE_LOW, 0);
-    if (err)
-      return NULL;
-    linux_args_addr = get_virtual_current_address (ch);
-  }
+  linux_args_addr = alloc_virtual_mem_addr (size, 8, &err);
 
   /* 64位指针指向开始地址 */
   linux_argv = linux_args_addr;
@@ -628,16 +622,6 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 #endif
 
 #ifdef ENABLE_OLD_CODE
-  {
-    grub_relocator_chunk_t ch;
-    err = grub_relocator_alloc_chunk_align (relocator, &ch,
-					    0, (0xffffffff - size) + 1,
-					    size, 8,
-					    GRUB_RELOCATOR_PREFERENCE_LOW, 0);
-    if (err)
-      return err;
-    linux_args_addr = get_virtual_current_address (ch);
-  }
   linux_args_addr = alloc_virtual_mem_addr (size, 8, &err);
 #endif
   if (err)
