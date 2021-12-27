@@ -68,7 +68,8 @@ grub_uint32_t acpi_nvs_index = 0;
 /* Begin from loongarch64.c */
 static struct linux_loongarch64_kernel_params kernel_params;
 #ifdef ENABLE_OLD_CODE
-static grub_uint8_t *linux_args_addr;
+//static grub_uint8_t *linux_args_addr;
+static void* linux_args_addr;
 #else
 static void* linux_args_addr;
 #endif
@@ -619,9 +620,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 				    linux_args + sizeof (LINUX_IMAGE) - 1,
 				    cmdline_size,
 				    GRUB_VERIFY_KERNEL_CMDLINE);
-#endif
-
-#ifdef ENABLE_OLD_CODE
+#else
   linux_args_addr = alloc_virtual_mem_addr (size, 8, &err);
 #endif
   if (err)
@@ -742,23 +741,9 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   initrd_mem = allocate_initrd_mem (initrd_pages);
 #else
   grub_err_t err;
-#ifdef ENABLE_OLD_CODE
-  {
-  grub_relocator_chunk_t ch;
-  err = grub_relocator_alloc_chunk_align (relocator, &ch,
-					  0, (0xffffffff - initrd_size) + 1,
-					  initrd_size, 0x10000,
-					  GRUB_RELOCATOR_PREFERENCE_LOW, 0);
-
-  if (err)
-    goto fail;
-  initrd_mem = get_virtual_current_address (ch);
-  }
-#else
   initrd_mem = alloc_virtual_mem_addr (initrd_size, 0x10000, &err);
   if (err)
     goto fail;
-#endif
 #endif
 
   if (!initrd_mem)
