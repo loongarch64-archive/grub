@@ -33,10 +33,12 @@
 #include <grub/cpu/linux.h>
 #include <grub/efi/memory.h>
 
+#include <grub/lib/hexdump.h>
+
 GRUB_MOD_LICENSE ("GPLv3+");
 
 //#define ENABLE_EFI_KERNEL 1
-#define ENABLE_OLD_CODE 1
+//#define ENABLE_OLD_CODE 1
 
 #define ENTER_FUNCTION  grub_dprintf ("linux", "DDDEEEBBBUUUGGG enter %s\n", __FUNCTION__);
 #define LEAVE_FUNCTION  grub_dprintf ("linux", "DDDEEEBBBUUUGGG leave %s\n", __FUNCTION__);
@@ -68,8 +70,7 @@ grub_uint32_t acpi_nvs_index = 0;
 /* Begin from loongarch64.c */
 static struct linux_loongarch64_kernel_params kernel_params;
 #ifdef ENABLE_OLD_CODE
-//static grub_uint8_t *linux_args_addr;
-static void* linux_args_addr;
+static grub_uint8_t *linux_args_addr;
 #else
 static void* linux_args_addr;
 #endif
@@ -229,10 +230,9 @@ static void* grub_linux_make_argv (void)
   argc = kernel_params.linux_argc;
   args = kernel_params.linux_args;
 
-
   /* new size */
   p = args;
-  size = (argc + 1) * sizeof (grub_uint64_t);  /* orig arguments */
+  size = (argc + 3 + 1) * sizeof (grub_uint64_t);  /* orig arguments */
   for (i = 0; i < argc; i++)
     {
       size += ALIGN_UP (grub_strlen (p) + 1, 4);
@@ -249,13 +249,16 @@ static void* grub_linux_make_argv (void)
 
   /* 64位指针指向开始地址 */
   linux_argv = linux_args_addr;
-  linux_args = (char *) (linux_argv + (argc + 1 + 3)); /* 字符串指针, 指向变量的起始地址  */
-
+  grub_dprintf("linux", "linux_argv addr: %p, linux_argv_addr: %p\n", linux_argv, linux_args_addr);
+  linux_args = (char *)(linux_argv + (argc + 1 + 3)); /* 字符串指针, 指向变量的起始地址  */
   p = args;
   for (i = 0; i < argc; i++)
     {
+      grub_dprintf("linux", "saved argv[%d]=[%s]\n", i, p);
+      grub_dprintf("linux", "linux_args addr: %p, p(=args) addr: %p\n", linux_args, p);
       grub_memcpy (linux_args, p, grub_strlen (p) + 1);
       *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
+      linux_argv++;
       linux_args += ALIGN_UP (grub_strlen (p) + 1, 4);
       p += grub_strlen (p) + 1;
     }
@@ -266,8 +269,8 @@ static void* grub_linux_make_argv (void)
 		 "rd_start=0x%lx",
 		 (grub_uint64_t) kernel_params.ramdisk_addr);
   *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
-  linux_args += ALIGN_UP (sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"), 4);
   linux_argv++;
+  linux_args += ALIGN_UP (sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"), 4);
   kernel_params.linux_argc++;
 
   /* rd_size */
@@ -276,8 +279,8 @@ static void* grub_linux_make_argv (void)
 		 "rd_size=0x%lx",
 		 (grub_uint64_t) kernel_params.ramdisk_size);
   *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
-  linux_args += ALIGN_UP (sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"), 4);
   linux_argv++;
+  linux_args += ALIGN_UP (sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"), 4);
   kernel_params.linux_argc++;
 
   /* initrd */
@@ -287,12 +290,21 @@ static void* grub_linux_make_argv (void)
 		 ((grub_uint64_t) kernel_params.ramdisk_addr & 0xffffffff),
 		 (grub_uint64_t) kernel_params.ramdisk_size);
   *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
-  linux_args += ALIGN_UP (sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"), 4);
   linux_argv++;
+  linux_args += ALIGN_UP (sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"), 4);
   kernel_params.linux_argc++;
 
   /* Reserve space for initrd arguments.  */
   *linux_argv = 0;
+
+  /* for debug */
+  DEBUG_INFO;
+  hexdump (0, linux_args_addr, 1024);
+  linux_argv = linux_args_addr;
+  for (i=0; i < kernel_params.linux_argc; i++) {
+      grub_dprintf("linux", "new argv[%d]=[%s]\n", i, (char*) *(linux_argv + i));
+  }
+  DEBUG_INFO;
 
   LEAVE_FUNCTION
   return linux_args_addr;
@@ -620,7 +632,8 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 				    linux_args + sizeof (LINUX_IMAGE) - 1,
 				    cmdline_size,
 				    GRUB_VERIFY_KERNEL_CMDLINE);
-#else
+#endif
+#ifdef ENABLE_OLD_CODE
   linux_args_addr = alloc_virtual_mem_addr (size, 8, &err);
 #endif
   if (err)
@@ -667,7 +680,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
   grub_uint32_t cmdline_size;
   cmdline_size = grub_loader_cmdline_size (argc, argv) + sizeof (LINUX_IMAGE);
   kernel_params.linux_argc = argc;
-  kernel_params.linux_args = grub_malloc (cmdline_size);
+  kernel_params.linux_args = grub_zalloc (cmdline_size);
 
   if (!kernel_params.linux_args)
     {
@@ -679,8 +692,8 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
   p += sizeof (LINUX_IMAGE) - 1;
   for (i=0; i < argc; i++)
     {
-      grub_memcpy (p, argv[i], sizeof(argv[i]));
-      p += sizeof(argv[i]);
+      grub_memcpy (p, argv[i], grub_strlen(argv[i]) + 1);
+      p += grub_strlen(argv[i]) + 1;
     }
 #endif
 
