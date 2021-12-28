@@ -19,10 +19,28 @@
 #ifndef GRUB_LOONGARCH64_LINUX_HEADER
 #define GRUB_LOONGARCH64_LINUX_HEADER 1
 
+#include <grub/types.h>
+
+/* LoongArch linux kernel type */
+#define GRUB_LOONGARCH_LINUX_BAD 0
+#define GRUB_LOONGARCH_LINUX_ELF 1
+#define GRUB_LOONGARCH_LINUX_EFI 2
+
+#define GRUB_EFI_PE_MAGIC	0x5A4D
+
 #define GRUB_LINUX_LOONGARCH_MAGIC_SIGNATURE 0x4C6F6F6E67417263 /* 'LoongArc' */
 #define GRUB_LINUX_LOONGARCH_MAGIC_SIGNATURE2 0x68		/* 'h' */
 
-#define GRUB_EFI_PE_MAGIC	0x5A4D
+struct linux_loongarch64_kernel_params
+{
+  grub_addr_t kernel_addr; 		/* kernel entry address */
+  grub_size_t kernel_size;		/* kernel size */
+  grub_addr_t ramdisk_addr;		/* initrd load address */
+  grub_size_t ramdisk_size;		/* initrd size */
+  int         linux_argc;
+  grub_addr_t linux_argv;
+  void*       linux_args;
+};
 
 /* From linux/Documentation/loongarch/booting.txt
  *
@@ -40,28 +58,23 @@ struct linux_loongarch64_kernel_header
   grub_uint64_t res0;		/* reserved */
   grub_uint64_t res1;		/* reserved */
   grub_uint64_t res2;		/* reserved */
-  grub_uint64_t magic0;		/* Magic number, little endian, "LoongArc" */
+  grub_uint64_t magic;		/* Magic number, little endian, "LoongArc" */
   grub_uint32_t magic1;		/* Magic number, little endian, "h" */
   grub_uint64_t res3;		/* reserved */
   grub_uint32_t hdr_offset;	/* Offset of PE/COFF header */
 };
 
 #define linux_arch_kernel_header linux_loongarch64_kernel_header
+#include <grub/efi/efi.h>
+#include <grub/elfload.h>
 
-/* used to load ELF linux kernel */
-#include <grub/types.h>
-#include <grub/efi/api.h>
+void *
+allocate_initrd_mem (int initrd_pages);
 
-struct linux_loongarch64_kernel_params
-{
-  grub_addr_t kernel_addr; 		/* kernel entry address */
-  grub_size_t kernel_size;		/* kernel size */
-  grub_addr_t ramdisk_addr;		/* initrd load address */
-  grub_size_t ramdisk_size;		/* initrd size */
-  int         linux_argc;
-  grub_addr_t linux_argv;
-  void*       linux_args;
-};
+/* used for the ELF kernel */
+//#include <grub/types.h>
+//#include <grub/efi/api.h>
+//#include <grub/elfload.h>
 
 /* From arch/loongarch/include/asm/mach-loongson64/boot_param.h */
 #define GRUB_LOONGSON3_BOOT_MEM_MAP_MAX 128
@@ -96,20 +109,22 @@ struct loongsonlist_mem_map {
     } GRUB_PACKED map[GRUB_LOONGSON3_BOOT_MEM_MAP_MAX];
 }GRUB_PACKED;
 
-grub_uint8_t
-grub_efi_loongarch64_calculatesum8 (const grub_uint8_t *Buffer, grub_efi_uintn_t Length);
+grub_err_t
+grub_arch_elf_linux_boot_image (grub_addr_t linux_addr, int linux_argc, grub_addr_t linux_argv);
 
-grub_uint8_t
-grub_efi_loongarch64_grub_calculatechecksum8 (const grub_uint8_t *Buffer, grub_efi_uintn_t Length);
+void*
+alloc_virtual_mem_addr (grub_size_t size, grub_size_t align, grub_err_t *err);
+
+void
+grub_linux_make_argv (void);
 
 int
-grub_efi_loongarch64_get_boot_params (struct bootparamsinterface **boot_params);
+grub_arch_elf_get_boot_params (struct bootparamsinterface **boot_params);
 
-grub_uint32_t
-grub_efi_loongarch64_memmap_sort (struct memmap array[],
-				  grub_uint32_t length,
-				  struct loongsonlist_mem_map* bpmem,
-				  grub_uint32_t index,
-				  grub_uint32_t memtype);
+grub_err_t
+grub_arch_elf_boot_params_table (struct bootparamsinterface *boot_params);
+
+grub_err_t
+grub_linux_load_elf64 (grub_elf_t elf, const char *filename);
 
 #endif /* ! GRUB_LOONGARCH64_LINUX_HEADER */
