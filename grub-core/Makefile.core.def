@@ -263,6 +263,7 @@ kernel = {
   arm64_efi = kern/efi/fdt.c;
 
   loongarch64_efi = kern/loongarch64/efi/init.c;
+  loongarch64_efi = kern/efi/fdt.c;
 
   riscv32_efi = kern/riscv/efi/init.c;
   riscv32_efi = kern/efi/fdt.c;
