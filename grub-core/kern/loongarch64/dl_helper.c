@@ -34,10 +34,6 @@ struct grub_loongarch64_stack
 
 static void grub_loongarch64_stack_push (grub_loongarch64_stack_t stack, grub_uint64_t x);
 static grub_uint64_t grub_loongarch64_stack_pop (grub_loongarch64_stack_t stack);
-#if 0
-static grub_uint64_t grub_loongarch64_stack_peek (grub_loongarch64_stack_t stack);
-static void grub_loongarch64_stack_display (grub_loongarch64_stack_t stack);
-#endif
 
 grub_loongarch64_stack_t
 grub_loongarch64_stack_new  (int n)
@@ -66,24 +62,6 @@ grub_loongarch64_stack_pop (grub_loongarch64_stack_t stack)
     return -1;
   return stack->data[stack->top--];
 }
-
-#if 0
-static grub_uint64_t
-grub_loongarch64_stack_peek (grub_loongarch64_stack_t stack)
-{
-  if (stack->top == -1)
-    return -1;
-  return stack->data[stack->top];
-}
-
-static void
-grub_loongarch64_stack_display (grub_loongarch64_stack_t stack)
-{
-  for (int i=stack->top ; i>-1 ; i--)
-    grub_dprintf ("stack:", "%"PRIuGRUB_UINT64_T" ",stack->data[i]);
-  grub_dprintf ("stack:", "\n\n");
-}
-#endif
 
 void
 grub_loongarch64_stack_destroy (grub_loongarch64_stack_t stack)

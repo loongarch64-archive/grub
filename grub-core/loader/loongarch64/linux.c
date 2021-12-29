@@ -35,9 +35,10 @@
 
 GRUB_MOD_LICENSE ("GPLv3+");
 
-struct linux_loongarch64_kernel_params kernel_params;
-struct grub_relocator *relocator;
+static struct linux_loongarch64_kernel_params kernel_params;
+//extern struct grub_relocator *relocator;
 
+static grub_addr_t phys_addr;
 static grub_dl_t my_mod;
 static int loaded;
 static int grub_loongarch_linux_type = GRUB_LOONGARCH_LINUX_BAD;
@@ -52,9 +53,7 @@ grub_linux_boot (void)
 					     kernel_params.linux_args));
   }
   if (grub_loongarch_linux_type == GRUB_LOONGARCH_LINUX_ELF) {
-      return (grub_arch_elf_linux_boot_image ((grub_addr_t) kernel_params.kernel_addr,
-					      kernel_params.linux_argc,
-					      kernel_params.linux_argv));
+      return grub_arch_elf_linux_boot_image (&kernel_params);
   }
 
   return GRUB_ERR_NONE;
@@ -79,7 +78,7 @@ grub_linux_unload (void)
   if (grub_loongarch_linux_type == GRUB_LOONGARCH_LINUX_ELF) {
       grub_free (kernel_params.linux_args);
       kernel_params.linux_args = 0;
-      grub_relocator_unload (relocator);
+      grub_elf_relocator_unload ();
   }
 
   grub_dl_unref (my_mod);
@@ -87,6 +86,45 @@ grub_linux_unload (void)
   grub_loongarch_linux_type = GRUB_LOONGARCH_LINUX_BAD;
 
   return GRUB_ERR_NONE;
+}
+
+grub_err_t
+grub_linux_load_elf64 (grub_elf_t elf, const char *filename)
+{
+  Elf64_Addr base;
+  grub_err_t err;
+  grub_uint8_t *playground;
+
+  /* Linux's entry point incorrectly contains a virtual address.  */
+  kernel_params.kernel_addr = elf->ehdr.ehdr64.e_entry;
+  kernel_params.kernel_size = grub_elf64_size (elf, &base, 0);
+
+  if (kernel_params.kernel_size == 0)
+    return grub_errno;
+
+  phys_addr = base;
+  kernel_params.kernel_size = ALIGN_UP (base + kernel_params.kernel_size - base, 8);
+
+//  relocator = grub_relocator_new ();
+//  if (!relocator)
+//    return grub_errno;
+//
+//  {
+//    grub_relocator_chunk_t ch;
+//    err = grub_relocator_alloc_chunk_addr (relocator, &ch,
+//					   grub_vtop ((void *) phys_addr),
+//					   kernel_params.kernel_size);
+//    if (err)
+//      return err;
+//    playground = get_virtual_current_address (ch);
+//  }
+  playground = alloc_virtual_mem_addr (phys_addr, kernel_params.kernel_size, &err);
+  if (playground == NULL)
+    return err;
+
+  /* Now load the segments into the area we claimed.  */
+  return grub_elf64_load (elf, filename, playground - base,
+			  GRUB_ELF_LOAD_FLAGS_NONE, 0, 0);
 }
 
 static grub_err_t
@@ -288,7 +326,7 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
       initrd_mem = allocate_initrd_mem (initrd_pages);
   } else {
       grub_err_t err;
-      initrd_mem = alloc_virtual_mem_addr (initrd_size, 0x10000, &err);
+      initrd_mem = alloc_virtual_mem_align (initrd_size, 0x10000, &err);
       if (err)
 	goto fail;
   }

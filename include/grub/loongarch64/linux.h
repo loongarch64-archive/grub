@@ -26,6 +26,8 @@
 #define GRUB_LOONGARCH_LINUX_ELF 1
 #define GRUB_LOONGARCH_LINUX_EFI 2
 
+#define DEBUG_INFO grub_dprintf ("linux", "DEBUG %d: %s()\n", __LINE__, __FUNCTION__);
+
 #define GRUB_EFI_PE_MAGIC	0x5A4D
 
 #define GRUB_LINUX_LOONGARCH_MAGIC_SIGNATURE 0x4C6F6F6E67417263 /* 'LoongArc' */
@@ -110,13 +112,18 @@ struct loongsonlist_mem_map {
 }GRUB_PACKED;
 
 grub_err_t
-grub_arch_elf_linux_boot_image (grub_addr_t linux_addr, int linux_argc, grub_addr_t linux_argv);
+grub_arch_elf_linux_boot_image (struct linux_loongarch64_kernel_params
+				*kernel_params);
 
 void*
-alloc_virtual_mem_addr (grub_size_t size, grub_size_t align, grub_err_t *err);
+alloc_virtual_mem_addr (grub_addr_t addr, grub_size_t size, grub_err_t *err);
 
-void
-grub_linux_make_argv (void);
+void*
+alloc_virtual_mem_align (grub_size_t size, grub_size_t align, grub_err_t *err);
+
+void grub_elf_relocator_unload (void);
+//void
+//grub_linux_make_argv (struct linux_loongarch64_kernel_params *kernel_params);
 
 int
 grub_arch_elf_get_boot_params (struct bootparamsinterface **boot_params);

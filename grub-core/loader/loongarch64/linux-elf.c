@@ -21,10 +21,10 @@
 #include <grub/efi/efi.h>
 #include <grub/elfload.h>
 #include <grub/cpu/relocator.h>
+#include <grub/lib/hexdump.h>
 
-static grub_addr_t phys_addr;
-extern struct linux_loongarch64_kernel_params kernel_params;
-extern struct grub_relocator *relocator;
+//extern struct linux_loongarch64_kernel_params kernel_params;
+static struct grub_relocator *relocator;
 
 #define PAGE_SIZE 4096
 #define GRUB_EFI_LOONGSON_SMBIOS_TABLE_GUID	\
@@ -32,8 +32,103 @@ extern struct grub_relocator *relocator;
 	{ 0x89, 0x9a, 0x43, 0x18, 0x02, 0x50, 0xa0, 0xc9 } \
     }
 
+void grub_elf_relocator_unload (void)
+{
+  grub_relocator_unload (relocator);
+}
+
+void grub_linux_make_argv (struct linux_loongarch64_kernel_params *kernel_params)
+{
+  static void* linux_args_addr;
+  int size;
+  grub_uint64_t *linux_argv;
+  char *args, *p, *linux_args;
+  int i, argc;
+  grub_err_t err;
+
+  argc = kernel_params->linux_argc;
+  args = kernel_params->linux_args;
+
+  DEBUG_INFO
+  /* new size */
+  p = args;
+  size = (argc + 3 + 1) * sizeof (grub_uint64_t);  /* orig arguments */
+  for (i = 0; i < argc; i++)
+    {
+      size += ALIGN_UP (grub_strlen (p) + 1, 4);
+      p += grub_strlen (p) + 1;
+    }
+
+  DEBUG_INFO
+  size += ALIGN_UP (sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"), 4) \
+	  + ALIGN_UP (sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"), 4) \
+	  + ALIGN_UP (sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"),
+		      4);
+  size = ALIGN_UP (size, 8);
+
+  DEBUG_INFO
+  /* alloc memory */
+  linux_args_addr = alloc_virtual_mem_align (size, 8, &err);
+
+  DEBUG_INFO
+  linux_argv = linux_args_addr;
+  linux_args = (char *)(linux_argv + (argc + 1 + 3));
+  p = args;
+  DEBUG_INFO
+  for (i = 0; i < argc; i++)
+    {
+      grub_memcpy (linux_args, p, grub_strlen (p) + 1);
+      *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
+      linux_argv++;
+      linux_args += ALIGN_UP (grub_strlen (p) + 1, 4);
+      p += grub_strlen (p) + 1;
+    }
+
+  DEBUG_INFO
+  /* rd_start */
+  grub_snprintf (linux_args,
+		 sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"),
+		 "rd_start=0x%lx",
+		 (grub_uint64_t) kernel_params->ramdisk_addr);
+  *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
+  linux_argv++;
+  linux_args += ALIGN_UP (sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"), 4);
+  kernel_params->linux_argc++;
+
+  /* rd_size */
+  grub_snprintf (linux_args,
+		 sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"),
+		 "rd_size=0x%lx",
+		 (grub_uint64_t) kernel_params->ramdisk_size);
+  *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
+  linux_argv++;
+  linux_args += ALIGN_UP (sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"), 4);
+  kernel_params->linux_argc++;
+
+  /* initrd */
+  grub_snprintf (linux_args,
+		 sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"),
+		 "initrd=0x%lx,0x%lx",
+		 ((grub_uint64_t) kernel_params->ramdisk_addr & 0xffffffff),
+		 (grub_uint64_t) kernel_params->ramdisk_size);
+  *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
+  linux_argv++;
+  linux_args += ALIGN_UP (sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"), 4);
+  kernel_params->linux_argc++;
+
+  /* Reserve space for initrd arguments.  */
+  *linux_argv = 0;
+
+  DEBUG_INFO
+  grub_free (kernel_params->linux_args);
+  DEBUG_INFO
+  kernel_params->linux_argv = (grub_addr_t) linux_args_addr;
+  DEBUG_INFO
+}
+
 grub_err_t
-grub_arch_elf_linux_boot_image (grub_addr_t linux_addr, int linux_argc, grub_addr_t linux_argv)
+grub_arch_elf_linux_boot_image (struct linux_loongarch64_kernel_params
+				*kernel_params)
 {
   struct bootparamsinterface *boot_params = NULL;
   struct grub_relocator64_state state;
@@ -50,13 +145,21 @@ grub_arch_elf_linux_boot_image (grub_addr_t linux_addr, int linux_argc, grub_add
 	grub_printf("yetist: find param\n");
     }
 
+  DEBUG_INFO
   /* Boot the ELF kernel */
-  grub_linux_make_argv ();
-  state.gpr[1] = linux_addr;  /* ra */
-  state.gpr[4] = linux_argc;   /* a0 = argc */
-  state.gpr[5] = linux_argv; /* a1 = args */
+  grub_linux_make_argv (kernel_params);
+  state.gpr[1] = kernel_params->kernel_addr;  /* ra */
+  state.gpr[4] = kernel_params->linux_argc;   /* a0 = argc */
+  state.gpr[5] = kernel_params->linux_argv; /* a1 = args */
   state.gpr[6] = (grub_uint64_t) boot_params; /* a2 = envp */
   state.jumpreg = 1;
+
+  int i;
+  hexdump (0, (void*) kernel_params->linux_argv, 512);
+  for (i = 0; i < kernel_params->linux_argc; i++)
+    {
+      grub_dprintf("linux", "argv[%d] = [%s]\n", i, (char*)((grub_uint64_t*)kernel_params->linux_argv + i));
+    }
 
   err = grub_arch_elf_boot_params_table (boot_params);
   if (err)
@@ -66,88 +169,25 @@ grub_arch_elf_linux_boot_image (grub_addr_t linux_addr, int linux_argc, grub_add
   return GRUB_ERR_NONE;
 }
 
-void grub_linux_make_argv (void)
+void*
+alloc_virtual_mem_addr (grub_addr_t addr, grub_size_t size, grub_err_t *err)
 {
-  static void* linux_args_addr;
-  int size;
-  grub_uint64_t *linux_argv;
-  char *args, *p, *linux_args;
-  int i, argc;
-  grub_err_t err;
+  relocator = grub_relocator_new ();
+  if (!relocator)
+    return NULL;
 
-  argc = kernel_params.linux_argc;
-  args = kernel_params.linux_args;
-
-  /* new size */
-  p = args;
-  size = (argc + 3 + 1) * sizeof (grub_uint64_t);  /* orig arguments */
-  for (i = 0; i < argc; i++)
-    {
-      size += ALIGN_UP (grub_strlen (p) + 1, 4);
-      p += grub_strlen (p) + 1;
-    }
-
-  size += ALIGN_UP (sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"), 4) \
-	  + ALIGN_UP (sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"), 4) \
-	  + ALIGN_UP (sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"),
-		      4);
-  size = ALIGN_UP (size, 8);
-
-  /* alloc memory */
-  linux_args_addr = alloc_virtual_mem_addr (size, 8, &err);
-
-  linux_argv = linux_args_addr;
-  linux_args = (char *)(linux_argv + (argc + 1 + 3));
-  p = args;
-  for (i = 0; i < argc; i++)
-    {
-      grub_memcpy (linux_args, p, grub_strlen (p) + 1);
-      *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
-      linux_argv++;
-      linux_args += ALIGN_UP (grub_strlen (p) + 1, 4);
-      p += grub_strlen (p) + 1;
-    }
-
-  /* rd_start */
-  grub_snprintf (linux_args,
-		 sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"),
-		 "rd_start=0x%lx",
-		 (grub_uint64_t) kernel_params.ramdisk_addr);
-  *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
-  linux_argv++;
-  linux_args += ALIGN_UP (sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"), 4);
-  kernel_params.linux_argc++;
-
-  /* rd_size */
-  grub_snprintf (linux_args,
-		 sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"),
-		 "rd_size=0x%lx",
-		 (grub_uint64_t) kernel_params.ramdisk_size);
-  *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
-  linux_argv++;
-  linux_args += ALIGN_UP (sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"), 4);
-  kernel_params.linux_argc++;
-
-  /* initrd */
-  grub_snprintf (linux_args,
-		 sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"),
-		 "initrd=0x%lx,0x%lx",
-		 ((grub_uint64_t) kernel_params.ramdisk_addr & 0xffffffff),
-		 (grub_uint64_t) kernel_params.ramdisk_size);
-  *linux_argv = (grub_uint64_t) (grub_addr_t) linux_args;
-  linux_argv++;
-  linux_args += ALIGN_UP (sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"), 4);
-  kernel_params.linux_argc++;
-
-  /* Reserve space for initrd arguments.  */
-  *linux_argv = 0;
-
-  grub_free (kernel_params.linux_args);
-  kernel_params.linux_argv = (grub_addr_t) linux_args_addr;
+  grub_relocator_chunk_t ch;
+  *err = grub_relocator_alloc_chunk_addr (relocator, &ch,
+					 grub_vtop ((void *) addr),
+					 size);
+  if (*err)
+    return NULL;
+  return get_virtual_current_address (ch);
 }
 
+
 void*
-alloc_virtual_mem_addr (grub_size_t size, grub_size_t align, grub_err_t *err)
+alloc_virtual_mem_align (grub_size_t size, grub_size_t align, grub_err_t *err)
 {
   grub_relocator_chunk_t ch;
 
@@ -181,42 +221,6 @@ grub_arch_elf_get_boot_params (struct bootparamsinterface **boot_params)
 	  }
       }
   return found;
-}
-
-grub_err_t
-grub_linux_load_elf64 (grub_elf_t elf, const char *filename)
-{
-  Elf64_Addr base;
-  grub_err_t err;
-  grub_uint8_t *playground;
-
-  /* Linux's entry point incorrectly contains a virtual address.  */
-  kernel_params.kernel_addr = elf->ehdr.ehdr64.e_entry;
-  kernel_params.kernel_size = grub_elf64_size (elf, &base, 0);
-
-  if (kernel_params.kernel_size == 0)
-    return grub_errno;
-
-  phys_addr = base;
-  kernel_params.kernel_size = ALIGN_UP (base + kernel_params.kernel_size - base, 8);
-
-  relocator = grub_relocator_new ();
-  if (!relocator)
-    return grub_errno;
-
-  {
-    grub_relocator_chunk_t ch;
-    err = grub_relocator_alloc_chunk_addr (relocator, &ch,
-      				     grub_vtop ((void *) phys_addr),
-      				     kernel_params.kernel_size);
-    if (err)
-      return err;
-    playground = get_virtual_current_address (ch);
-  }
-
-  /* Now load the segments into the area we claimed.  */
-  return grub_elf64_load (elf, filename, playground - base,
-			  GRUB_ELF_LOAD_FLAGS_NONE, 0, 0);
 }
 
 static grub_uint8_t

@@ -20,11 +20,9 @@
 #define GRUB_TYPES_CPU_HEADER	1
 
 /* The size of void *.  */
-#define SIZEOF_VOID_P			8
 #define GRUB_TARGET_SIZEOF_VOID_P	8
 
 /* The size of long.  */
-#define SIZEOF_LONG			8
 #define GRUB_TARGET_SIZEOF_LONG		8
 
 /* LoongArch is little-endian.  */
