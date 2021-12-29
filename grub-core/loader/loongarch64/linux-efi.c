@@ -21,6 +21,7 @@
 #include <grub/efi/memory.h>
 #include <grub/charset.h>
 
+#define GRUB_EFI_PE_MAGIC	0x5A4D
 #define INITRD_MAX_ADDRESS_OFFSET (32ULL * 1024 * 1024 * 1024)
 
 grub_err_t
@@ -40,7 +41,7 @@ grub_arch_efi_linux_check_image (struct linux_arch_kernel_header * lh)
 }
 
 void *
-allocate_initrd_mem (int initrd_pages)
+grub_linux_loongarch_efi_allocate_initrd_mem (int initrd_pages)
 {
   grub_addr_t max_addr;
 

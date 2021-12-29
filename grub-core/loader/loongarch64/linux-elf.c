@@ -21,21 +21,27 @@
 #include <grub/efi/efi.h>
 #include <grub/elfload.h>
 #include <grub/cpu/relocator.h>
-
-static struct grub_relocator *relocator;
-
 #include <grub/efi/memory.h>
+
+#define GRUB_ADDRESS_TYPE_SYSRAM	1
+#define GRUB_ADDRESS_TYPE_RESERVED	2
+#define GRUB_ADDRESS_TYPE_ACPI		3
+#define GRUB_ADDRESS_TYPE_NVS		4
+#define GRUB_ADDRESS_TYPE_PMEM		5
 #define GRUB_EFI_LOONGSON_SMBIOS_TABLE_GUID	\
     { 0x4660f721, 0x2ec5, 0x416a, \
 	{ 0x89, 0x9a, 0x43, 0x18, 0x02, 0x50, 0xa0, 0xc9 } \
     }
 
-void grub_elf_relocator_unload (void)
+static struct grub_relocator *relocator;
+
+void grub_linux_loongarch_elf_relocator_unload (void)
 {
   grub_relocator_unload (relocator);
 }
 
-void grub_linux_make_argv (struct linux_loongarch64_kernel_params *kernel_params)
+void
+grub_linux_loongarch_elf_make_argv (struct linux_loongarch64_kernel_params *kernel_params)
 {
   static void* linux_args_addr;
   int size;
@@ -63,7 +69,7 @@ void grub_linux_make_argv (struct linux_loongarch64_kernel_params *kernel_params
   size = ALIGN_UP (size, 8);
 
   /* alloc memory */
-  linux_args_addr = alloc_virtual_mem_align (size, 8, &err);
+  linux_args_addr = grub_linux_loongarch_alloc_virtual_mem_align (size, 8, &err);
 
   linux_argv = linux_args_addr;
   linux_args = (char *)(linux_argv + (argc + 1 + 3));
@@ -116,8 +122,8 @@ void grub_linux_make_argv (struct linux_loongarch64_kernel_params *kernel_params
 }
 
 grub_err_t
-grub_arch_elf_linux_boot_image (struct linux_loongarch64_kernel_params
-				*kernel_params)
+grub_linux_loongarch_elf_linux_boot_image (struct linux_loongarch64_kernel_params
+					   *kernel_params)
 {
   struct bootparamsinterface *boot_params = NULL;
   struct grub_relocator64_state state;
@@ -126,7 +132,7 @@ grub_arch_elf_linux_boot_image (struct linux_loongarch64_kernel_params
   /* linux kernel type is ELF */
   grub_memset (&state, 0, sizeof (state));
 
-  if (grub_arch_elf_get_boot_params (&boot_params) == 0)
+  if (grub_linux_loongarch_elf_get_boot_params (&boot_params) == 0)
     {
       grub_printf("not find param\n");
       return -1;
@@ -135,14 +141,14 @@ grub_arch_elf_linux_boot_image (struct linux_loongarch64_kernel_params
     }
 
   /* Boot the ELF kernel */
-  grub_linux_make_argv (kernel_params);
+  grub_linux_loongarch_elf_make_argv (kernel_params);
   state.gpr[1] = kernel_params->kernel_addr;  /* ra */
   state.gpr[4] = kernel_params->linux_argc;   /* a0 = argc */
   state.gpr[5] = kernel_params->linux_argv; /* a1 = args */
   state.gpr[6] = (grub_uint64_t) boot_params; /* a2 = envp */
   state.jumpreg = 1;
 
-  err = grub_arch_elf_boot_params_table (boot_params);
+  err = grub_linux_loongarch_elf_boot_params (boot_params);
   if (err)
     return err;
   grub_relocator64_boot (relocator, state);
@@ -151,7 +157,9 @@ grub_arch_elf_linux_boot_image (struct linux_loongarch64_kernel_params
 }
 
 void*
-alloc_virtual_mem_addr (grub_addr_t addr, grub_size_t size, grub_err_t *err)
+grub_linux_loongarch_alloc_virtual_mem_addr (grub_addr_t addr,
+					     grub_size_t size,
+					     grub_err_t *err)
 {
   relocator = grub_relocator_new ();
   if (!relocator)
@@ -168,7 +176,9 @@ alloc_virtual_mem_addr (grub_addr_t addr, grub_size_t size, grub_err_t *err)
 
 
 void*
-alloc_virtual_mem_align (grub_size_t size, grub_size_t align, grub_err_t *err)
+grub_linux_loongarch_alloc_virtual_mem_align (grub_size_t size,
+					      grub_size_t align,
+					      grub_err_t *err)
 {
   grub_relocator_chunk_t ch;
 
@@ -180,7 +190,7 @@ alloc_virtual_mem_align (grub_size_t size, grub_size_t align, grub_err_t *err)
 }
 
 int
-grub_arch_elf_get_boot_params (struct bootparamsinterface **boot_params)
+grub_linux_loongarch_elf_get_boot_params (struct bootparamsinterface **boot_params)
 {
   grub_efi_configuration_table_t *tables;
   grub_efi_guid_t smbios_guid = GRUB_EFI_LOONGSON_SMBIOS_TABLE_GUID;
@@ -301,7 +311,7 @@ find_mmap_size (void)
 }
 
 grub_err_t
-grub_arch_elf_boot_params_table (struct bootparamsinterface *boot_params)
+grub_linux_loongarch_elf_boot_params (struct bootparamsinterface *boot_params)
 {
   grub_int8_t checksum = 0;
   grub_uint32_t j = 0;

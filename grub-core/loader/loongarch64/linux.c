@@ -16,17 +16,9 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//#include <grub/efi/api.h>
-//#include <grub/efi/efi.h>
-//#include <grub/elf.h>
-//#include <grub/elfload.h>
 #include <grub/loader.h>
-//#include <grub/dl.h>
-//#include <grub/mm.h>
 #include <grub/misc.h>
 #include <grub/command.h>
-//#include <grub/cpu/relocator.h>
-//#include <grub/memory.h>
 #include <grub/i18n.h>
 #include <grub/lib/cmdline.h>
 #include <grub/linux.h>
@@ -52,7 +44,7 @@ grub_linux_boot (void)
 					     kernel_params.linux_args));
   }
   if (grub_loongarch_linux_type == GRUB_LOONGARCH_LINUX_ELF) {
-      return grub_arch_elf_linux_boot_image (&kernel_params);
+      return grub_linux_loongarch_elf_linux_boot_image (&kernel_params);
   }
 
   return GRUB_ERR_NONE;
@@ -77,7 +69,7 @@ grub_linux_unload (void)
   if (grub_loongarch_linux_type == GRUB_LOONGARCH_LINUX_ELF) {
       grub_free (kernel_params.linux_args);
       kernel_params.linux_args = 0;
-      grub_elf_relocator_unload ();
+      grub_linux_loongarch_elf_relocator_unload ();
   }
 
   grub_dl_unref (my_mod);
@@ -88,7 +80,7 @@ grub_linux_unload (void)
 }
 
 grub_err_t
-grub_linux_load_elf64 (grub_elf_t elf, const char *filename)
+grub_linux_loongarch_elf_load_kernel (grub_elf_t elf, const char *filename)
 {
   Elf64_Addr base;
   grub_err_t err;
@@ -104,7 +96,9 @@ grub_linux_load_elf64 (grub_elf_t elf, const char *filename)
   phys_addr = base;
   kernel_params.kernel_size = ALIGN_UP (base + kernel_params.kernel_size - base, 8);
 
-  playground = alloc_virtual_mem_addr (phys_addr, kernel_params.kernel_size, &err);
+  playground = grub_linux_loongarch_alloc_virtual_mem_addr (phys_addr,
+							    kernel_params.kernel_size,
+							    &err);
   if (playground == NULL)
     return err;
 
@@ -163,7 +157,7 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 
       if (grub_elf_is_elf64 (elf))
 	{
-	  err = grub_linux_load_elf64 (elf, argv[0]);
+	  err = grub_linux_loongarch_elf_load_kernel (elf, argv[0]);
 	  if (err)
 	    goto fail;
 	} else {
@@ -309,10 +303,10 @@ grub_cmd_initrd (grub_command_t cmd __attribute__ ((unused)),
   if (grub_loongarch_linux_type == GRUB_LOONGARCH_LINUX_EFI) {
       grub_size_t initrd_pages;
       initrd_pages = (GRUB_EFI_BYTES_TO_PAGES (initrd_size));
-      initrd_mem = allocate_initrd_mem (initrd_pages);
+      initrd_mem = grub_linux_loongarch_efi_allocate_initrd_mem (initrd_pages);
   } else {
       grub_err_t err;
-      initrd_mem = alloc_virtual_mem_align (initrd_size, 0x10000, &err);
+      initrd_mem = grub_linux_loongarch_alloc_virtual_mem_align (initrd_size, 0x10000, &err);
       if (err)
 	goto fail;
   }
