@@ -16,17 +16,17 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/efi/api.h>
-#include <grub/efi/efi.h>
-#include <grub/elf.h>
-#include <grub/elfload.h>
+//#include <grub/efi/api.h>
+//#include <grub/efi/efi.h>
+//#include <grub/elf.h>
+//#include <grub/elfload.h>
 #include <grub/loader.h>
-#include <grub/dl.h>
-#include <grub/mm.h>
+//#include <grub/dl.h>
+//#include <grub/mm.h>
 #include <grub/misc.h>
 #include <grub/command.h>
-#include <grub/cpu/relocator.h>
-#include <grub/memory.h>
+//#include <grub/cpu/relocator.h>
+//#include <grub/memory.h>
 #include <grub/i18n.h>
 #include <grub/lib/cmdline.h>
 #include <grub/linux.h>
@@ -36,7 +36,6 @@
 GRUB_MOD_LICENSE ("GPLv3+");
 
 static struct linux_loongarch64_kernel_params kernel_params;
-//extern struct grub_relocator *relocator;
 
 static grub_addr_t phys_addr;
 static grub_dl_t my_mod;
@@ -105,19 +104,6 @@ grub_linux_load_elf64 (grub_elf_t elf, const char *filename)
   phys_addr = base;
   kernel_params.kernel_size = ALIGN_UP (base + kernel_params.kernel_size - base, 8);
 
-//  relocator = grub_relocator_new ();
-//  if (!relocator)
-//    return grub_errno;
-//
-//  {
-//    grub_relocator_chunk_t ch;
-//    err = grub_relocator_alloc_chunk_addr (relocator, &ch,
-//					   grub_vtop ((void *) phys_addr),
-//					   kernel_params.kernel_size);
-//    if (err)
-//      return err;
-//    playground = get_virtual_current_address (ch);
-//  }
   playground = alloc_virtual_mem_addr (phys_addr, kernel_params.kernel_size, &err);
   if (playground == NULL)
     return err;

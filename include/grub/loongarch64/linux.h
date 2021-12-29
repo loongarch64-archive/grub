@@ -122,8 +122,8 @@ void*
 alloc_virtual_mem_align (grub_size_t size, grub_size_t align, grub_err_t *err);
 
 void grub_elf_relocator_unload (void);
-//void
-//grub_linux_make_argv (struct linux_loongarch64_kernel_params *kernel_params);
+void
+grub_linux_make_argv (struct linux_loongarch64_kernel_params *kernel_params);
 
 int
 grub_arch_elf_get_boot_params (struct bootparamsinterface **boot_params);
@@ -133,5 +133,8 @@ grub_arch_elf_boot_params_table (struct bootparamsinterface *boot_params);
 
 grub_err_t
 grub_linux_load_elf64 (grub_elf_t elf, const char *filename);
+
+//grub_err_t
+//grub_loongarch64_linux_load_elf64 (grub_elf_t elf, const char *filename);
 
 #endif /* ! GRUB_LOONGARCH64_LINUX_HEADER */

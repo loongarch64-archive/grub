@@ -21,12 +21,10 @@
 #include <grub/efi/efi.h>
 #include <grub/elfload.h>
 #include <grub/cpu/relocator.h>
-#include <grub/lib/hexdump.h>
 
-//extern struct linux_loongarch64_kernel_params kernel_params;
 static struct grub_relocator *relocator;
 
-#define PAGE_SIZE 4096
+#include <grub/efi/memory.h>
 #define GRUB_EFI_LOONGSON_SMBIOS_TABLE_GUID	\
     { 0x4660f721, 0x2ec5, 0x416a, \
 	{ 0x89, 0x9a, 0x43, 0x18, 0x02, 0x50, 0xa0, 0xc9 } \
@@ -49,7 +47,6 @@ void grub_linux_make_argv (struct linux_loongarch64_kernel_params *kernel_params
   argc = kernel_params->linux_argc;
   args = kernel_params->linux_args;
 
-  DEBUG_INFO
   /* new size */
   p = args;
   size = (argc + 3 + 1) * sizeof (grub_uint64_t);  /* orig arguments */
@@ -59,22 +56,18 @@ void grub_linux_make_argv (struct linux_loongarch64_kernel_params *kernel_params
       p += grub_strlen (p) + 1;
     }
 
-  DEBUG_INFO
   size += ALIGN_UP (sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"), 4) \
 	  + ALIGN_UP (sizeof ("rd_size=0xXXXXXXXXXXXXXXXX"), 4) \
 	  + ALIGN_UP (sizeof ("initrd=0xXXXXXXXXXXXXXXXX,0xXXXXXXXXXXXXXXXX"),
 		      4);
   size = ALIGN_UP (size, 8);
 
-  DEBUG_INFO
   /* alloc memory */
   linux_args_addr = alloc_virtual_mem_align (size, 8, &err);
 
-  DEBUG_INFO
   linux_argv = linux_args_addr;
   linux_args = (char *)(linux_argv + (argc + 1 + 3));
   p = args;
-  DEBUG_INFO
   for (i = 0; i < argc; i++)
     {
       grub_memcpy (linux_args, p, grub_strlen (p) + 1);
@@ -84,7 +77,6 @@ void grub_linux_make_argv (struct linux_loongarch64_kernel_params *kernel_params
       p += grub_strlen (p) + 1;
     }
 
-  DEBUG_INFO
   /* rd_start */
   grub_snprintf (linux_args,
 		 sizeof ("rd_start=0xXXXXXXXXXXXXXXXX"),
@@ -119,11 +111,8 @@ void grub_linux_make_argv (struct linux_loongarch64_kernel_params *kernel_params
   /* Reserve space for initrd arguments.  */
   *linux_argv = 0;
 
-  DEBUG_INFO
   grub_free (kernel_params->linux_args);
-  DEBUG_INFO
   kernel_params->linux_argv = (grub_addr_t) linux_args_addr;
-  DEBUG_INFO
 }
 
 grub_err_t
@@ -145,7 +134,6 @@ grub_arch_elf_linux_boot_image (struct linux_loongarch64_kernel_params
 	grub_printf("yetist: find param\n");
     }
 
-  DEBUG_INFO
   /* Boot the ELF kernel */
   grub_linux_make_argv (kernel_params);
   state.gpr[1] = kernel_params->kernel_addr;  /* ra */
@@ -153,13 +141,6 @@ grub_arch_elf_linux_boot_image (struct linux_loongarch64_kernel_params
   state.gpr[5] = kernel_params->linux_argv; /* a1 = args */
   state.gpr[6] = (grub_uint64_t) boot_params; /* a2 = envp */
   state.jumpreg = 1;
-
-  int i;
-  hexdump (0, (void*) kernel_params->linux_argv, 512);
-  for (i = 0; i < kernel_params->linux_argc; i++)
-    {
-      grub_dprintf("linux", "argv[%d] = [%s]\n", i, (char*)((grub_uint64_t*)kernel_params->linux_argv + i));
-    }
 
   err = grub_arch_elf_boot_params_table (boot_params);
   if (err)
@@ -288,7 +269,7 @@ find_mmap_size (void)
   if (mmap_size != 0)
     return mmap_size;
 
-  mmap_size = PAGE_SIZE;
+  mmap_size = GRUB_EFI_PAGE_SIZE;
   while (1)
     {
       int ret;
@@ -310,13 +291,13 @@ find_mmap_size (void)
       else if (ret > 0)
 	break;
 
-      mmap_size += PAGE_SIZE;
+      mmap_size += GRUB_EFI_PAGE_SIZE;
     }
   /* Increase the size a bit for safety, because GRUB allocates more on
      later, and EFI itself may allocate more.  */
-  mmap_size += PAGE_SIZE;
+  mmap_size += GRUB_EFI_PAGE_SIZE;
 
-  return ALIGN_UP(mmap_size, PAGE_SIZE);
+  return ALIGN_UP(mmap_size, GRUB_EFI_PAGE_SIZE);
 }
 
 grub_err_t
@@ -365,7 +346,7 @@ grub_arch_elf_boot_params_table (struct bootparamsinterface *boot_params)
   mmap_size = find_mmap_size ();
   if (! mmap_size)
     return grub_errno;
-  mmap_buf = grub_efi_allocate_any_pages (ALIGN_UP (mmap_size, PAGE_SIZE) >> 12);
+  mmap_buf = grub_efi_allocate_any_pages (ALIGN_UP (mmap_size, GRUB_EFI_PAGE_SIZE) >> 12);
   if (! mmap_buf)
     return grub_error (GRUB_ERR_IO, "cannot allocate memory map");
 
@@ -396,26 +377,26 @@ grub_arch_elf_boot_params_table (struct bootparamsinterface *boot_params)
 	{
 	  free_mem[free_index].memtype = GRUB_ADDRESS_TYPE_SYSRAM;
 	  free_mem[free_index].memstart = (lsdesc->physical_start) & 0xffffffffffff;
-	  free_mem[free_index].memsize = lsdesc->num_pages * PAGE_SIZE;
+	  free_mem[free_index].memsize = lsdesc->num_pages * GRUB_EFI_PAGE_SIZE;
 	  free_index++;
 
 	  /*ACPI*/
 	}else if((lsdesc->type == GRUB_EFI_ACPI_RECLAIM_MEMORY)){
 	    acpi_table_mem[acpi_table_index].memtype = GRUB_ADDRESS_TYPE_ACPI;
 	    acpi_table_mem[acpi_table_index].memstart = (lsdesc->physical_start) & 0xffffffffffff;
-	    acpi_table_mem[acpi_table_index].memsize = lsdesc->num_pages * PAGE_SIZE;
+	    acpi_table_mem[acpi_table_index].memsize = lsdesc->num_pages * GRUB_EFI_PAGE_SIZE;
 	    acpi_table_index++;
 	}else if((lsdesc->type == GRUB_EFI_ACPI_MEMORY_NVS)){
 	    acpi_nvs_mem[acpi_nvs_index].memtype = GRUB_ADDRESS_TYPE_NVS;
 	    acpi_nvs_mem[acpi_nvs_index].memstart = (lsdesc->physical_start) & 0xffffffffffff;
-	    acpi_nvs_mem[acpi_nvs_index].memsize = lsdesc->num_pages * PAGE_SIZE;
+	    acpi_nvs_mem[acpi_nvs_index].memsize = lsdesc->num_pages * GRUB_EFI_PAGE_SIZE;
 	    acpi_nvs_index++;
 
 	    /* Reserve */
 	}else{
 	    reserve_mem[reserve_index].memtype = GRUB_ADDRESS_TYPE_RESERVED;
 	    reserve_mem[reserve_index].memstart = (lsdesc->physical_start) & 0xffffffffffff;
-	    reserve_mem[reserve_index].memsize = lsdesc->num_pages * PAGE_SIZE;
+	    reserve_mem[reserve_index].memsize = lsdesc->num_pages * GRUB_EFI_PAGE_SIZE;
 	    reserve_index++;
 	}
     }
