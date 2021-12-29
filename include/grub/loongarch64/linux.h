@@ -19,10 +19,18 @@
 #ifndef GRUB_LOONGARCH64_LINUX_HEADER
 #define GRUB_LOONGARCH64_LINUX_HEADER 1
 
+#include <grub/types.h>
+
+/* LoongArch linux kernel type */
+#define GRUB_LOONGARCH_LINUX_BAD 0
+#define GRUB_LOONGARCH_LINUX_ELF 1
+#define GRUB_LOONGARCH_LINUX_EFI 2
+
+#define GRUB_LOONGSON3_BOOT_MEM_MAP_MAX 128
+
 #define GRUB_LINUX_LOONGARCH_MAGIC_SIGNATURE 0x4C6F6F6E67417263 /* 'LoongArc' */
 #define GRUB_LINUX_LOONGARCH_MAGIC_SIGNATURE2 0x68		/* 'h' */
-
-#define GRUB_EFI_PE_MAGIC	0x5A4D
+#define linux_arch_kernel_header linux_loongarch64_kernel_header
 
 /* From linux/Documentation/loongarch/booting.txt
  *
@@ -40,79 +48,82 @@ struct linux_loongarch64_kernel_header
   grub_uint64_t res0;		/* reserved */
   grub_uint64_t res1;		/* reserved */
   grub_uint64_t res2;		/* reserved */
-  grub_uint64_t magic0;		/* Magic number, little endian, "LoongArc" */
+  grub_uint64_t magic;		/* Magic number, little endian, "LoongArc" */
   grub_uint32_t magic1;		/* Magic number, little endian, "h" */
   grub_uint64_t res3;		/* reserved */
   grub_uint32_t hdr_offset;	/* Offset of PE/COFF header */
 };
 
-#define linux_arch_kernel_header linux_loongarch64_kernel_header
+struct linux_loongarch64_kernel_params
+{
+  grub_addr_t kernel_addr; 		/* kernel entry address */
+  grub_size_t kernel_size;		/* kernel size */
+  grub_addr_t ramdisk_addr;		/* initrd load address */
+  grub_size_t ramdisk_size;		/* initrd size */
+  int         linux_argc;
+  grub_addr_t linux_argv;
+  void*       linux_args;
+};
 
-/* used to load ELF linux kernel */
-#include <grub/types.h>
-#include <grub/efi/api.h>
-#define GRUB_EFI_LOONGSON_SMBIOS_TABLE_GUID	\
-  { 0x4660f721, 0x2ec5, 0x416a, \
-    { 0x89, 0x9a, 0x43, 0x18, 0x02, 0x50, 0xa0, 0xc9 } \
-  }
+#include <grub/efi/efi.h>
+#include <grub/elfload.h>
 
-#define GRUB_EFI_LOONGSON_MMAP_MAX 128
-typedef enum
-  {
-    GRUB_EFI_LOONGSON_SYSTEM_RAM = 1,
-    GRUB_EFI_LOONGSON_MEMORY_RESERVED,
-    GRUB_EFI_LOONGSON_ACPI_TABLE,
-    GRUB_EFI_LOONGSON_ACPI_NVS,
-    GRUB_EFI_LOONGSON_MAX_MEMORY_TYPE
-  }
-grub_efi_loongarch64_memory_type;
+/* From arch/loongarch/include/asm/mach-loongson64/boot_param.h */
+struct _extention_list_hdr {
+    grub_uint64_t		signature;
+    grub_uint32_t  		length;
+    grub_uint8_t   		revision;
+    grub_uint8_t   		checksum;
+    struct _extention_list_hdr *next;
+} GRUB_PACKED;
 
-int EXPORT_FUNC(grub_efi_is_loongarch64) (void);
+struct bootparamsinterface {
+    grub_uint64_t		signature;  /* {"B", "P", "I", "0", "1", ... } */
+    grub_efi_system_table_t	*systemtable;
+    struct _extention_list_hdr	*extlist;
+    grub_uint64_t flags;
+}GRUB_PACKED;
 
-grub_uint8_t
-EXPORT_FUNC(grub_efi_loongarch64_calculatesum8) (const grub_uint8_t *Buffer, grub_efi_uintn_t Length);
-
-grub_uint8_t
-EXPORT_FUNC(grub_efi_loongarch64_grub_calculatechecksum8) (const grub_uint8_t *Buffer, grub_efi_uintn_t Length);
-
+struct loongsonlist_mem_map {
+    struct _extention_list_hdr	header;	/* {"M", "E", "M"} */
+    grub_uint8_t		map_count;
+    struct memmap {
+	grub_uint32_t memtype;
+	grub_uint64_t memstart;
+	grub_uint64_t memsize;
+    } GRUB_PACKED map[GRUB_LOONGSON3_BOOT_MEM_MAP_MAX];
+}GRUB_PACKED;
 
 void *
-EXPORT_FUNC(grub_efi_loongarch64_get_boot_params) (void);
+grub_linux_loongarch_efi_allocate_initrd_mem (int initrd_pages);
 
-typedef struct _extention_list_hdr{
-  grub_uint64_t  signature;
-  grub_uint32_t  length;
-  grub_uint8_t   revision;
-  grub_uint8_t   checksum;
-  struct  _extention_list_hdr *next;
-}GRUB_PACKED
-ext_list;
+grub_err_t
+grub_linux_loongarch_elf_linux_boot_image (struct linux_loongarch64_kernel_params
+					   *kernel_params);
 
-typedef struct bootparamsinterface {
-  grub_uint64_t           signature;    //{'B', 'P', 'I', '_', '0', '_', '1'}
-  grub_efi_system_table_t *systemtable;
-  ext_list         *extlist;
-}GRUB_PACKED
-bootparamsinterface;
+void*
+grub_linux_loongarch_alloc_virtual_mem_addr (grub_addr_t addr,
+					     grub_size_t size,
+					     grub_err_t *err);
 
-typedef struct {
-  ext_list  header;         //  {'M', 'E', 'M'}
-  grub_uint8_t mapcount;
-  struct GRUB_PACKED memmap {
-    grub_uint32_t memtype;
-    grub_uint64_t memstart;
-    grub_uint64_t memsize;
-  } map[GRUB_EFI_LOONGSON_MMAP_MAX];
-}GRUB_PACKED
-mem_map;
+void*
+grub_linux_loongarch_alloc_virtual_mem_align (grub_size_t size,
+					      grub_size_t align,
+					      grub_err_t *err);
 
-typedef struct {
-  ext_list header;          // {VBIOS}
-  grub_uint64_t  vbiosaddr;
-}GRUB_PACKED
-vbios;
+void
+grub_linux_loongarch_elf_relocator_unload (void);
 
-grub_uint32_t
-EXPORT_FUNC (grub_efi_loongarch64_memmap_sort) (struct memmap array[], grub_uint32_t length, mem_map * bpmem, grub_uint32_t index, grub_uint32_t memtype);
+void
+grub_linux_loongarch_elf_make_argv (struct linux_loongarch64_kernel_params *kernel_params);
+
+int
+grub_linux_loongarch_elf_get_boot_params (struct bootparamsinterface **boot_params);
+
+grub_err_t
+grub_linux_loongarch_elf_boot_params (struct bootparamsinterface *boot_params);
+
+grub_err_t
+grub_linux_loongarch_elf_load_kernel (grub_elf_t elf, const char *filename);
 
 #endif /* ! GRUB_LOONGARCH64_LINUX_HEADER */
