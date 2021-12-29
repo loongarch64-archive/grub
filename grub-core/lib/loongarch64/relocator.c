@@ -40,6 +40,16 @@ extern grub_uint8_t grub_relocator_backward_end;
 				 - &grub_relocator_##x##_start)
 #define RELOCATOR_SIZEOF(x)	(RELOCATOR_SRC_SIZEOF(x) \
 				 + REGW_SIZEOF * 3)
+#define INS_LU12I_W 0x14000000
+#define INS_ORI     0x03800000
+#define INS_LU32I_D 0x16000000
+#define INS_LU52I_D 0x3000000
+#define INS_JIRL    0x4c000000
+#define REG_RA 1
+#define REG_A4 8
+#define REG_A5 9
+#define REG_A6 10
+
 grub_size_t grub_relocator_align = sizeof (grub_uint64_t);
 grub_size_t grub_relocator_forward_size;
 grub_size_t grub_relocator_backward_size;
@@ -55,35 +65,29 @@ grub_cpu_relocator_init (void)
 static void
 write_reg (int regn, grub_uint64_t val, void **target)
 {
-  grub_uint32_t lu12iw=0x14000000;
-  grub_uint32_t ori=0x03800000;
-  grub_uint32_t lu32id=0x16000000;
-  grub_uint32_t lu52id=0x03000000;
 
-  *(grub_uint32_t *) *target = (lu12iw | (grub_uint32_t)((val & 0xfffff000)>>12<<5) | (grub_uint32_t)regn);;
+  *(grub_uint32_t *) *target = (INS_LU12I_W | (grub_uint32_t)((val & 0xfffff000)>>12<<5) | (grub_uint32_t)regn);;
   *target = ((grub_uint32_t *) *target) + 1;
-  *(grub_uint32_t *) *target = (ori | (grub_uint32_t)((val & 0xfff)<<10) | (grub_uint32_t)(regn | regn<<5));
+  *(grub_uint32_t *) *target = (INS_ORI | (grub_uint32_t)((val & 0xfff)<<10) | (grub_uint32_t)(regn | regn<<5));
   *target = ((grub_uint32_t *) *target) + 1;
-  *(grub_uint32_t *) *target = (lu32id | (grub_uint32_t)((val & 0xfffff00000000)>>32<<5) | (grub_uint32_t)regn);;
+  *(grub_uint32_t *) *target = (INS_LU32I_D | (grub_uint32_t)((val & 0xfffff00000000)>>32<<5) | (grub_uint32_t)regn);;
   *target = ((grub_uint32_t *) *target) + 1;
-  *(grub_uint32_t *) *target = (lu52id | (grub_uint32_t)((val & 0xfff0000000000000)>>52<<10) | (grub_uint32_t)(regn | regn<<5));;
+  *(grub_uint32_t *) *target = (INS_LU52I_D | (grub_uint32_t)((val & 0xfff0000000000000)>>52<<10) | (grub_uint32_t)(regn | regn<<5));;
   *target = ((grub_uint32_t *) *target) + 1;
 }
 
 static void
 write_jump (int regn, void **target)
 {
-  grub_uint32_t andi=0x4c000000;
-
-  *(grub_uint32_t *) *target = (andi | (grub_uint32_t)(regn<<5));
+  *(grub_uint32_t *) *target = (INS_JIRL | (grub_uint32_t)(regn<<5));
   *target = ((grub_uint32_t *) *target) + 1;
 }
 
 void
 grub_cpu_relocator_jumper (void *rels, grub_addr_t addr)
 {
-  write_reg (1, addr, &rels);
-  write_jump (1, &rels);
+  write_reg (REG_RA, addr, &rels);
+  write_jump (REG_RA, &rels);
 }
 
 void
@@ -91,21 +95,21 @@ grub_cpu_relocator_backward (void *ptr0, void *src, void *dest,
 			     grub_size_t size)
 {
   void *ptr = ptr0;
-  write_reg (8, (grub_uint64_t) src, &ptr);
-  write_reg (9, (grub_uint64_t) dest, &ptr);
-  write_reg (10, (grub_uint64_t) size, &ptr);
+  write_reg (REG_A4, (grub_uint64_t) src, &ptr);
+  write_reg (REG_A5, (grub_uint64_t) dest, &ptr);
+  write_reg (REG_A6, (grub_uint64_t) size, &ptr);
   grub_memcpy (ptr, &grub_relocator_backward_start,
 	       RELOCATOR_SRC_SIZEOF (backward));
 }
 
 void
 grub_cpu_relocator_forward (void *ptr0, void *src, void *dest,
-			     grub_size_t size)
+			    grub_size_t size)
 {
   void *ptr = ptr0;
-  write_reg (8, (grub_uint64_t) src, &ptr);
-  write_reg (9, (grub_uint64_t) dest, &ptr);
-  write_reg (10, (grub_uint64_t) size, &ptr);
+  write_reg (REG_A4, (grub_uint64_t) src, &ptr);
+  write_reg (REG_A5, (grub_uint64_t) dest, &ptr);
+  write_reg (REG_A6, (grub_uint64_t) size, &ptr);
   grub_memcpy (ptr, &grub_relocator_forward_start,
 	       RELOCATOR_SRC_SIZEOF (forward));
 }
@@ -146,13 +150,9 @@ grub_relocator64_boot (struct grub_relocator *rel,
   grub_arch_sync_caches ((void *) relst, relsize);
 
   grub_uint64_t val;
-  __asm__ __volatile__(
-		  "li.w      %0, 0x4\n\t"
-		  "csrxchg $r0, %0, 0x0\n\t"
-		  : "=r"(val)
-		  :
-		  :
-		  );
+  __asm__ __volatile__("li.w      %0, 0x4\n\t"
+		       "csrxchg $r0, %0, 0x0\n\t"
+		       : "=r"(val));
 
   ((void (*) (void)) relst) ();
 
