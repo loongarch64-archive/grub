@@ -113,6 +113,9 @@ case "$target_cpu" in
   aarch64*)
 		target_cpu=arm64
 		;;
+  loongarch64)
+		target_cpu=loongarch64
+		;;
   riscv32*)
 		target_cpu=riscv32
 		;;
@@ -142,6 +145,7 @@ if test "x$with_platform" = x; then
     ia64-*) platform=efi ;;
     arm-*) platform=uboot ;;
     arm64-*) platform=efi ;;
+    loongarch64-*) platform=efi;;
     riscv32-*) platform=efi ;;
     riscv64-*) platform=efi ;;
     *)
@@ -192,6 +196,7 @@ case "$target_cpu"-"$platform" in
   arm-coreboot) ;;
   arm-efi) ;;
   arm64-efi) ;;
+  loongarch64-efi) ;;
   riscv32-efi) ;;
   riscv64-efi) ;;
   *-emu) ;;
@@ -2021,6 +2026,8 @@ AM_CONDITIONAL([COND_arm_coreboot], [test x$target_cpu = xarm -a x$platform = xc
 AM_CONDITIONAL([COND_arm_efi], [test x$target_cpu = xarm -a x$platform = xefi])
 AM_CONDITIONAL([COND_arm64], [test x$target_cpu = xarm64 ])
 AM_CONDITIONAL([COND_arm64_efi], [test x$target_cpu = xarm64 -a x$platform = xefi])
+AM_CONDITIONAL([COND_loongarch64], [test x$target_cpu = xloongarch64])
+AM_CONDITIONAL([COND_loongarch64_efi], [test x$target_cpu = xloongarch64 -a x$platform = xefi])
 AM_CONDITIONAL([COND_riscv32], [test x$target_cpu = xriscv32 ])
 AM_CONDITIONAL([COND_riscv64], [test x$target_cpu = xriscv64 ])
 AM_CONDITIONAL([COND_riscv32_efi], [test x$target_cpu = xriscv32 -a x$platform = xefi])
