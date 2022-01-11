@@ -786,7 +786,7 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
   grub_uint64_t *gpptr = (void *) (pe_target + got_off);
   unsigned unmatched_adr_got_page = 0;
   struct grub_loongarch64_stack stack;
-  grub_loongarch64_stack_init (stack, 12);
+  grub_loongarch64_stack_init (&stack);
 #define MASK19 ((1 << 19) - 1)
 #else
   grub_uint32_t *tr = (void *) (pe_target + tramp_off);
