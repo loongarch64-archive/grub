@@ -28,7 +28,7 @@
 #define GRUB_ADDRESS_TYPE_ACPI		3
 #define GRUB_ADDRESS_TYPE_NVS		4
 #define GRUB_ADDRESS_TYPE_PMEM		5
-#define GRUB_EFI_LOONGSON_SMBIOS_TABLE_GUID	\
+#define GRUB_EFI_LOONGSON_BPI_TABLE_GUID	\
     { 0x4660f721, 0x2ec5, 0x416a, \
 	{ 0x89, 0x9a, 0x43, 0x18, 0x02, 0x50, 0xa0, 0xc9 } \
     }
@@ -137,7 +137,7 @@ grub_linux_loongarch_elf_linux_boot_image (struct linux_loongarch64_kernel_param
       grub_printf("not find param\n");
       return -1;
     } else {
-	grub_printf("yetist: find param\n");
+      grub_printf("yetist: find param\n");
     }
 
   /* Boot the ELF kernel */
@@ -185,7 +185,7 @@ grub_linux_loongarch_alloc_virtual_mem_align (grub_size_t size,
   *err = grub_relocator_alloc_chunk_align (relocator, &ch,
 					  0, (0xffffffff - size) + 1,
 					  size, align,
-					  GRUB_RELOCATOR_PREFERENCE_LOW, 0);
+					  GRUB_RELOCATOR_PREFERENCE_HIGH, 0);
   return get_virtual_current_address (ch);
 }
 
@@ -193,15 +193,15 @@ int
 grub_linux_loongarch_elf_get_boot_params (struct bootparamsinterface **boot_params)
 {
   grub_efi_configuration_table_t *tables;
-  grub_efi_guid_t smbios_guid = GRUB_EFI_LOONGSON_SMBIOS_TABLE_GUID;
+  grub_efi_guid_t bpi_guid = GRUB_EFI_LOONGSON_BPI_TABLE_GUID;
   unsigned int i;
   int found = 0;
 
-  /* Look for Loongson SMBIOS in UEFI config tables. */
+  /* Look for Loongson BPI in UEFI config tables. */
   tables = grub_efi_system_table->configuration_table;
 
   for (i = 0; i < grub_efi_system_table->num_table_entries; i++)
-    if (grub_memcmp (&tables[i].vendor_guid, &smbios_guid, sizeof (smbios_guid)) == 0)
+    if (grub_memcmp (&tables[i].vendor_guid, &bpi_guid, sizeof (bpi_guid)) == 0)
       {
 	*boot_params = tables[i].vendor_table;
 	char *p = (char*) &((*boot_params)->signature);
@@ -241,30 +241,30 @@ grub_efi_loongarch64_memmap_sort (struct memmap array[],
 
   for(j = 0; j < length;)
   {
-    tempmemsize = array[j].memsize;
+    tempmemsize = array[j].mem_size;
     for(t = j + 1; t < length; t++)
     {
-      if(array[j].memstart + tempmemsize == array[t].memstart)
+      if(array[j].mem_start + tempmemsize == array[t].mem_start)
       {
-        tempmemsize += array[t].memsize;
+        tempmemsize += array[t].mem_size;
       }
       else
       {
         break;
       }
-   }
-   bpmem->map[index].memtype = memtype;
-   bpmem->map[index].memstart = array[j].memstart;
-   bpmem->map[index].memsize = tempmemsize;
-   grub_dprintf("loongson", "map[%d]:type %"PRIuGRUB_UINT32_T", start 0x%"
-		PRIuGRUB_UINT64_T", end 0x%"PRIuGRUB_UINT64_T"\n",
+    }
+    bpmem->map[index].mem_type = memtype;
+    bpmem->map[index].mem_start = array[j].mem_start;
+    bpmem->map[index].mem_size = tempmemsize;
+    grub_printf("map[%d]:type %"PRIuGRUB_UINT32_T", start 0x%"
+		PRIxGRUB_UINT64_T", end 0x%"PRIxGRUB_UINT64_T"\n",
 		index,
-		bpmem->map[index].memtype,
-		bpmem->map[index].memstart,
-		bpmem->map[index].memstart+ bpmem->map[index].memsize
+		bpmem->map[index].mem_type,
+		bpmem->map[index].mem_start,
+		bpmem->map[index].mem_start+ bpmem->map[index].mem_size
 	       );
-   j = t;
-   index++;
+    j = t;
+    index++;
   }
   return index;
 }
@@ -314,15 +314,13 @@ grub_err_t
 grub_linux_loongarch_elf_boot_params (struct bootparamsinterface *boot_params)
 {
   grub_int8_t checksum = 0;
-  grub_uint32_t j = 0;
-  grub_uint32_t t = 0;
   grub_err_t err;
 
   struct loongsonlist_mem_map *loongson_mem_map = NULL;
+  void *systab_temp = NULL;
   grub_uint32_t tmp_index = 0;
   grub_efi_memory_descriptor_t * lsdesc = NULL;
 
-  grub_uint64_t tempMemsize = 0;
   grub_uint32_t free_index = 0;
   grub_uint32_t reserve_index = 0;
   grub_uint32_t acpi_table_index = 0;
@@ -342,16 +340,18 @@ grub_linux_loongarch_elf_boot_params (struct bootparamsinterface *boot_params)
   grub_memset (acpi_table_mem, 0, sizeof(struct memmap) * GRUB_LOONGSON3_BOOT_MEM_MAP_MAX);
   grub_memset (acpi_nvs_mem, 0, sizeof(struct memmap) * GRUB_LOONGSON3_BOOT_MEM_MAP_MAX);
 
-  /* Check extlist headers */
-  struct _extention_list_hdr *listpointer = NULL;
-  for (listpointer = boot_params->extlist; listpointer != NULL; listpointer = listpointer->next)
-    {
-      char *p = (char *) &(listpointer->signature);
-      if(grub_strncmp(p, "MEM", 3) == 0)
-	{
-	  loongson_mem_map = (struct loongsonlist_mem_map*) listpointer;
-	}
-    }
+  boot_params->systemtable_offset = sizeof(*boot_params);
+  boot_params->extlist_offset = sizeof(*boot_params) + sizeof(*grub_efi_system_table);
+  boot_params->flags = 1 << FLAGS_EFI_SUPPORT_BIT;
+  systab_temp = (char *)boot_params + boot_params->systemtable_offset;
+  grub_efi_system_table->runtime_services = NULL;
+  memcpy(systab_temp, grub_efi_system_table, sizeof(*grub_efi_system_table));
+
+  loongson_mem_map = (struct loongsonlist_mem_map*)((char *)boot_params + boot_params->extlist_offset);
+  memset(&loongson_mem_map->header, 0, sizeof(struct _extention_list_hdr));
+  memcpy(&loongson_mem_map->header.signature, "MEM", sizeof(grub_uint64_t));
+  loongson_mem_map->header.revision = 0;
+  loongson_mem_map->header.length = sizeof(*loongson_mem_map);
 
   mmap_size = find_mmap_size ();
   if (! mmap_size)
@@ -368,16 +368,14 @@ grub_linux_loongarch_elf_boot_params (struct bootparamsinterface *boot_params)
   if (!mmap_buf || !mmap_size || !desc_size)
     return -1;
 
-  tmp_index = loongson_mem_map -> map_count;
-
   /*
      According to UEFI SPEC,mmap_buf is the accurate Memory Map array \
      now we can fill platform specific memory structure.
      */
-  for(lsdesc = mmap_buf; lsdesc < (grub_efi_memory_descriptor_t *)((char *)mmap_buf + mmap_size);
+  for (lsdesc = mmap_buf; lsdesc < (grub_efi_memory_descriptor_t *)((char *)mmap_buf + mmap_size);
       lsdesc = (grub_efi_memory_descriptor_t *)((char *)lsdesc + desc_size))
     {
-      /* Recovery */
+      /* System RAM */
       if((lsdesc->type != GRUB_EFI_ACPI_RECLAIM_MEMORY) && \
 	 (lsdesc->type != GRUB_EFI_ACPI_MEMORY_NVS) && \
 	 (lsdesc->type != GRUB_EFI_RUNTIME_SERVICES_DATA) && \
@@ -385,78 +383,56 @@ grub_linux_loongarch_elf_boot_params (struct bootparamsinterface *boot_params)
 	 (lsdesc->type != GRUB_EFI_RESERVED_MEMORY_TYPE) && \
 	 (lsdesc->type != GRUB_EFI_PAL_CODE))
 	{
-	  free_mem[free_index].memtype = GRUB_ADDRESS_TYPE_SYSRAM;
-	  free_mem[free_index].memstart = (lsdesc->physical_start) & 0xffffffffffff;
-	  free_mem[free_index].memsize = lsdesc->num_pages * GRUB_EFI_PAGE_SIZE;
+	  free_mem[free_index].mem_type = GRUB_ADDRESS_TYPE_SYSRAM;
+	  free_mem[free_index].mem_start = (lsdesc->physical_start) & 0xffffffffffff;
+	  free_mem[free_index].mem_size = lsdesc->num_pages * GRUB_EFI_PAGE_SIZE;
 	  free_index++;
 
 	  /*ACPI*/
 	}else if((lsdesc->type == GRUB_EFI_ACPI_RECLAIM_MEMORY)){
-	    acpi_table_mem[acpi_table_index].memtype = GRUB_ADDRESS_TYPE_ACPI;
-	    acpi_table_mem[acpi_table_index].memstart = (lsdesc->physical_start) & 0xffffffffffff;
-	    acpi_table_mem[acpi_table_index].memsize = lsdesc->num_pages * GRUB_EFI_PAGE_SIZE;
+	    acpi_table_mem[acpi_table_index].mem_type = GRUB_ADDRESS_TYPE_ACPI;
+	    acpi_table_mem[acpi_table_index].mem_start = (lsdesc->physical_start) & 0xffffffffffff;
+	    acpi_table_mem[acpi_table_index].mem_size = lsdesc->num_pages * GRUB_EFI_PAGE_SIZE;
 	    acpi_table_index++;
 	}else if((lsdesc->type == GRUB_EFI_ACPI_MEMORY_NVS)){
-	    acpi_nvs_mem[acpi_nvs_index].memtype = GRUB_ADDRESS_TYPE_NVS;
-	    acpi_nvs_mem[acpi_nvs_index].memstart = (lsdesc->physical_start) & 0xffffffffffff;
-	    acpi_nvs_mem[acpi_nvs_index].memsize = lsdesc->num_pages * GRUB_EFI_PAGE_SIZE;
+	    acpi_nvs_mem[acpi_nvs_index].mem_type = GRUB_ADDRESS_TYPE_NVS;
+	    acpi_nvs_mem[acpi_nvs_index].mem_start = (lsdesc->physical_start) & 0xffffffffffff;
+	    acpi_nvs_mem[acpi_nvs_index].mem_size = lsdesc->num_pages * GRUB_EFI_PAGE_SIZE;
 	    acpi_nvs_index++;
 
-	    /* Reserve */
+	/* Reserve */
 	}else{
-	    reserve_mem[reserve_index].memtype = GRUB_ADDRESS_TYPE_RESERVED;
-	    reserve_mem[reserve_index].memstart = (lsdesc->physical_start) & 0xffffffffffff;
-	    reserve_mem[reserve_index].memsize = lsdesc->num_pages * GRUB_EFI_PAGE_SIZE;
+	    reserve_mem[reserve_index].mem_type = GRUB_ADDRESS_TYPE_RESERVED;
+	    reserve_mem[reserve_index].mem_start = (lsdesc->physical_start) & 0xffffffffffff;
+	    reserve_mem[reserve_index].mem_size = lsdesc->num_pages * GRUB_EFI_PAGE_SIZE;
 	    reserve_index++;
 	}
     }
 
-  /* Recovery sort */
-  for(j = 0; j < free_index;)
-    {
-      tempMemsize = free_mem[j].memsize;
-      for(t = j + 1; t < free_index; t++)
-	{
-	  if((free_mem[j].memstart + tempMemsize == free_mem[t].memstart) \
-	     && (free_mem[j].memtype == free_mem[t].memtype))
-	    {
-	      tempMemsize += free_mem[t].memsize;
-	    }else{
-		break;
-	    }
-	}
-
-      loongson_mem_map->map[tmp_index].memtype = GRUB_ADDRESS_TYPE_SYSRAM;
-      loongson_mem_map->map[tmp_index].memstart = free_mem[j].memstart;
-      loongson_mem_map->map[tmp_index].memsize = tempMemsize;
-      grub_dprintf("linux", "map[%d]:type %"PRIuGRUB_UINT32_T", "
-		   "start 0x%"PRIxGRUB_UINT64_T", "
-		   "end 0x%"PRIuGRUB_UINT64_T"\n",
-		   tmp_index,
-		   loongson_mem_map->map[tmp_index].memtype,
-		   loongson_mem_map->map[tmp_index].memstart,
-		   loongson_mem_map->map[tmp_index].memstart+ loongson_mem_map->map[tmp_index].memsize
-		  );
-      j = t;
-      tmp_index++;
-    }
+  /*System RAM Sort*/
+  tmp_index = grub_efi_loongarch64_memmap_sort(free_mem,
+							free_index,
+							loongson_mem_map,
+							tmp_index,
+							GRUB_ADDRESS_TYPE_SYSRAM);
+  /*ACPI Sort*/
+  tmp_index = grub_efi_loongarch64_memmap_sort(acpi_table_mem,
+							acpi_table_index,
+							loongson_mem_map,
+							tmp_index,
+							GRUB_ADDRESS_TYPE_ACPI);
+  tmp_index = grub_efi_loongarch64_memmap_sort(acpi_nvs_mem,
+							acpi_nvs_index,
+							loongson_mem_map,
+							tmp_index,
+							GRUB_ADDRESS_TYPE_NVS);
 
   /*Reserve Sort*/
-  grub_uint64_t loongarch_addr;
-  asm volatile ("csrrd %0, 0x181" : "=r" (loongarch_addr));
-  if((loongarch_addr & 0xff00000000000000) == 0x9000000000000000){
-      tmp_index = grub_efi_loongarch64_memmap_sort (reserve_mem,
-						    reserve_index,
-						    loongson_mem_map,
-						    tmp_index,
-						    GRUB_ADDRESS_TYPE_RESERVED);
-  }else{
-      tmp_index = grub_efi_loongarch64_memmap_sort (reserve_mem,
-						    reserve_index,
-						    loongson_mem_map,
-						    tmp_index,
-						    GRUB_ADDRESS_TYPE_RESERVED + 1);
-  }
+  tmp_index = grub_efi_loongarch64_memmap_sort (reserve_mem,
+							reserve_index,
+							loongson_mem_map,
+							tmp_index,
+							GRUB_ADDRESS_TYPE_RESERVED);
 
   loongson_mem_map->map_count = tmp_index;
   loongson_mem_map->header.checksum = 0;

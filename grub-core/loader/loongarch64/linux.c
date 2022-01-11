@@ -85,6 +85,7 @@ grub_linux_loongarch_elf_load_kernel (grub_elf_t elf, const char *filename)
   Elf64_Addr base;
   grub_err_t err;
   grub_uint8_t *playground;
+  int flag;
 
   /* Linux's entry point incorrectly contains a virtual address.  */
   kernel_params.kernel_addr = elf->ehdr.ehdr64.e_entry;
@@ -96,6 +97,14 @@ grub_linux_loongarch_elf_load_kernel (grub_elf_t elf, const char *filename)
   phys_addr = base;
   kernel_params.kernel_size = ALIGN_UP (base + kernel_params.kernel_size - base, 8);
 
+  if (kernel_params.kernel_addr & ELF64_LOADMASK) {
+    flag = GRUB_ELF_LOAD_FLAGS_30BITS;
+    base &= ~ELF64_LOADMASK;
+    kernel_params.kernel_addr &= ~ELF64_LOADMASK;
+  } else {
+    flag = GRUB_ELF_LOAD_FLAGS_NONE;
+  }
+
   playground = grub_linux_loongarch_alloc_virtual_mem_addr (phys_addr,
 							    kernel_params.kernel_size,
 							    &err);
@@ -104,7 +113,7 @@ grub_linux_loongarch_elf_load_kernel (grub_elf_t elf, const char *filename)
 
   /* Now load the segments into the area we claimed.  */
   return grub_elf64_load (elf, filename, playground - base,
-			  GRUB_ELF_LOAD_FLAGS_NONE, 0, 0);
+			  flag, 0, 0);
 }
 
 static grub_err_t

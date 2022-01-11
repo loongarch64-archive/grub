@@ -67,29 +67,47 @@ struct linux_loongarch64_kernel_params
 #include <grub/efi/efi.h>
 #include <grub/elfload.h>
 
+#define ELF32_LOADMASK (0xf0000000UL)
+#define ELF64_LOADMASK (0xf000000000000000ULL)
+#define FLAGS_EFI_SUPPORT_BIT 0
+
 /* From arch/loongarch/include/asm/mach-loongson64/boot_param.h */
 struct _extention_list_hdr {
     grub_uint64_t		signature;
     grub_uint32_t  		length;
     grub_uint8_t   		revision;
     grub_uint8_t   		checksum;
-    struct _extention_list_hdr *next;
+	union {
+      struct  _extention_list_hdr *next;
+      grub_uint64_t  next_offset;
+    };
+
 } GRUB_PACKED;
 
 struct bootparamsinterface {
     grub_uint64_t		signature;  /* {"B", "P", "I", "0", "1", ... } */
-    grub_efi_system_table_t	*systemtable;
-    struct _extention_list_hdr	*extlist;
+    union {
+      grub_efi_system_table_t *systemtable;
+      grub_uint64_t  systemtable_offset;
+    };
+    union {
+      struct _extention_list_hdr	*extlist;
+      grub_uint64_t  extlist_offset;
+    };
     grub_uint64_t flags;
 }GRUB_PACKED;
 
 struct loongsonlist_mem_map {
     struct _extention_list_hdr	header;	/* {"M", "E", "M"} */
-    grub_uint8_t		map_count;
+    grub_uint8_t  map_count;
+	grub_uint32_t desc_ver;
     struct memmap {
-	grub_uint32_t memtype;
-	grub_uint64_t memstart;
-	grub_uint64_t memsize;
+	grub_uint32_t mem_type;
+	grub_uint32_t pad;
+	grub_uint64_t mem_start;
+	grub_uint64_t virt_start;
+	grub_uint64_t mem_size;
+	grub_uint64_t attr;
     } GRUB_PACKED map[GRUB_LOONGSON3_BOOT_MEM_MAP_MAX];
 }GRUB_PACKED;
 
