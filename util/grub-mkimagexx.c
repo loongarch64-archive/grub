@@ -785,8 +785,8 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
   struct grub_ia64_trampoline *tr = (void *) (pe_target + tramp_off);
   grub_uint64_t *gpptr = (void *) (pe_target + got_off);
   unsigned unmatched_adr_got_page = 0;
-  grub_loongarch64_stack_t stack;
-  stack = grub_loongarch64_stack_new (16);
+  struct grub_loongarch64_stack stack;
+  grub_loongarch64_stack_init (&stack);
 #define MASK19 ((1 << 19) - 1)
 #else
   grub_uint32_t *tr = (void *) (pe_target + tramp_off);
@@ -1136,12 +1136,12 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 		     break;
 		   case R_LARCH_SOP_PUSH_PCREL:
 		   case R_LARCH_SOP_PUSH_PLT_PCREL:
-		     grub_loongarch64_sop_push (stack, sym_addr
+		     grub_loongarch64_sop_push (&stack, sym_addr
 						-(target_section_addr
 						  +offset
 						  +image_target->vaddr_offset));
 		     break;
-		   GRUB_LOONGARCH64_RELOCATION (stack, target, sym_addr)
+		   GRUB_LOONGARCH64_RELOCATION (&stack, target, sym_addr)
 		   default:
 		     grub_util_error (_("relocation 0x%x is not implemented yet"),
 				      (unsigned int) ELF_R_TYPE (info));
@@ -1448,9 +1448,6 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 	     }
 	  }
       }
-#ifdef MKIMAGE_ELF64
-  grub_loongarch64_stack_destroy (stack);
-#endif
 }
 
 /* Add a PE32's fixup entry for a relocation. Return the resulting address
@@ -1701,23 +1698,22 @@ translate_relocation_pe (struct translate_context *ctx,
       switch (ELF_R_TYPE (info))
 	{
 	case R_LARCH_64:
-		{
-		ctx->current_address = add_fixup_entry (
-		 &ctx->lst,
-		 GRUB_PE32_REL_BASED_DIR64,
-		 addr, 0, ctx->current_address,
-		 image_target);
-		}
-		break;
+	  {
+	    ctx->current_address = add_fixup_entry (&ctx->lst,
+						    GRUB_PE32_REL_BASED_DIR64,
+						    addr, 0, ctx->current_address,
+						    image_target);
+	  }
+	  break;
 	case R_LARCH_MARK_LA:
-		{
-		ctx->current_address = add_fixup_entry (
-		 &ctx->lst,
-		 GRUB_PE32_REL_BASED_LOONGARCH64_MARK_LA,
-		 addr, 0, ctx->current_address,
-		 image_target);
-		}
-		break;
+	  {
+	    ctx->current_address = add_fixup_entry (&ctx->lst,
+						    GRUB_PE32_REL_BASED_LOONGARCH64_MARK_LA,
+						    addr, 0, ctx->current_address,
+						    image_target);
+	  }
+	  break;
+	  /* Relative relocations do not require fixup entries. */
 	case R_LARCH_NONE:
 	case R_LARCH_SOP_PUSH_PCREL:
 	case R_LARCH_SOP_PUSH_ABSOLUTE:
@@ -1736,7 +1732,11 @@ translate_relocation_pe (struct translate_context *ctx,
 	case R_LARCH_SOP_POP_32_S_5_20:
 	case R_LARCH_SOP_POP_32_S_0_5_10_16_S2:
 	case R_LARCH_SOP_POP_32_S_0_10_10_16_S2:
-		break;
+	  grub_util_info ("  %s:  not adding fixup: 0x%08x : 0x%08x",
+			  __FUNCTION__,
+			  (unsigned int) addr,
+			  (unsigned int) ctx->current_address);
+	  break;
 	default:
 	  grub_util_error (_("relocation 0x%x is not implemented yet"),
 			   (unsigned int) ELF_R_TYPE (info));

@@ -22,7 +22,7 @@
 static inline void
 grub_cpu_idle(void)
 {
-  __asm__ __volatile__("idle 0\n");
+  __asm__ __volatile__("idle 0");
 }
 
 #endif

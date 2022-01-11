@@ -25,8 +25,6 @@
 #include <grub/i18n.h>
 #include <grub/cpu/reloc.h>
 
-#define RELOC_STACK_MAX 1024
-
 /* Check if EHDR is a valid ELF header.  */
 grub_err_t
 grub_arch_dl_check_header (void *ehdr)
@@ -44,15 +42,15 @@ grub_arch_dl_check_header (void *ehdr)
 #pragma GCC diagnostic ignored "-Wcast-align"
 
 /*
- * Unified function for both REL and RELA
+ * Unified function for both REL and RELA.
  */
 grub_err_t
 grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 			       Elf_Shdr *s, grub_dl_segment_t seg)
 {
   Elf_Rel *rel, *max;
-  grub_loongarch64_stack_t stack;
-  stack = grub_loongarch64_stack_new (16);
+  struct grub_loongarch64_stack stack;
+  grub_loongarch64_stack_init (&stack);
 
   for (rel = (Elf_Rel *) ((char *) ehdr + s->sh_offset),
 	 max = (Elf_Rel *) ((char *) rel + s->sh_size);
@@ -65,7 +63,7 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 
       if (rel->r_offset >= seg->size)
 	return grub_error (GRUB_ERR_BAD_MODULE,
-			   "reloc offset is out of the segment");
+			   "reloc offset is outside the segment");
 
       sym = (Elf_Sym *) ((char*)mod->symtab
 			 + mod->symsize * ELF_R_SYM (rel->r_info));
@@ -83,12 +81,12 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	break;
 	case R_LARCH_SOP_PUSH_PCREL:
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
-	  grub_loongarch64_sop_push (stack, sym_addr - (grub_uint64_t)place);
+	  grub_loongarch64_sop_push (&stack, sym_addr - (grub_uint64_t)place);
 	break;
-	GRUB_LOONGARCH64_RELOCATION (stack, place, sym_addr)
+	GRUB_LOONGARCH64_RELOCATION (&stack, place, sym_addr)
 	default:
 	  {
-	    char rel_info[17]; /* log16(2^64) = 16, plus NUL. */
+	    char rel_info[17]; /* log16(2^64) = 16, plus NUL.  */
 
 	    grub_snprintf (rel_info, sizeof (rel_info) - 1, "%" PRIxGRUB_UINT64_T,
 			   (grub_uint64_t) ELF_R_TYPE (rel->r_info));
@@ -98,7 +96,5 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	  break;
 	}
     }
-  grub_loongarch64_stack_destroy (stack);
   return GRUB_ERR_NONE;
 }
-

@@ -20,26 +20,14 @@
 
 	.file	"cache_flush.S"
 	.text
-
 /*
- * Simple cache maintenance functions
+ * No further work to do because cache consistency is maintained by hardware on
+ * LoongArch.
  */
-
-/*
- * a0 - *beg (inclusive)
- * a1 - *end (exclusive)
- * a2 - line size
-*/
 FUNCTION(grub_arch_clean_dcache_range)
-	/* TODO */
 	dbar 0
 	jr $ra
 
-/*
- * a0 - *beg (inclusive)
- * a1 - *end (exclusive)
- * a2 - line size
- */
 FUNCTION(grub_arch_invalidate_icache_range)
 	ibar 0
 	jr $ra

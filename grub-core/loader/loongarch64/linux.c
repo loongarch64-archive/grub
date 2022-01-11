@@ -169,10 +169,10 @@ grub_cmd_linux (grub_command_t cmd __attribute__ ((unused)),
 
   if (grub_loongarch_linux_type == GRUB_LOONGARCH_LINUX_BAD)
     {
-      if (grub_file_seek (elf->file, 0) == (grub_off_t) -1)
+      if (grub_file_seek (file, 0) == (grub_off_t) -1)
 	goto fail;
 
-      if (grub_file_read (file, &lh, sizeof (lh)) < (long) sizeof (lh))
+      if (grub_file_read (file, &lh, sizeof (lh)) < (grub_ssize_t) sizeof (lh))
 	{
 	  if (!grub_errno)
 	    grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),

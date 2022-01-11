@@ -25,8 +25,8 @@ GRUB_MOD_LICENSE "GPLv3+"
 	.text
 
 /*
-   int grub_setjmp (jmp_buf env)
-*/
+ * int grub_setjmp (jmp_buf env)
+ */
 FUNCTION(grub_setjmp)
 	st.d $s0, $a0, 0x0
 	st.d $s1, $a0, 0x8
@@ -42,11 +42,11 @@ FUNCTION(grub_setjmp)
 	st.d $ra, $a0, 0x58
 
 	move $a0, $zero
-	jirl $zero, $ra, 0
+	jr   $ra
 
 /*
-   void grub_longjmp (jmp_buf env, int val)
-*/
+ * void grub_longjmp (jmp_buf env, int val)
+ */
 FUNCTION(grub_longjmp)
 	ld.d $s0, $a0, 0x0
 	ld.d $s1, $a0, 0x8
@@ -65,4 +65,4 @@ FUNCTION(grub_longjmp)
 	beqz $a1, .L0
 	move $a0, $a1
 .L0:
-	jirl $zero, $ra, 0
+	jr   $ra

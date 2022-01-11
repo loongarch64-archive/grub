@@ -28,7 +28,7 @@
 /* LoongArch is little-endian.  */
 #undef GRUB_TARGET_WORDS_BIGENDIAN
 
-/* Unaligned accesses only supported if MMU enabled */
+/* Unaligned accesses are only supported if MMU is enabled.  */
 #undef GRUB_HAVE_UNALIGNED_ACCESS
 
 #endif /* ! GRUB_TYPES_CPU_HEADER */

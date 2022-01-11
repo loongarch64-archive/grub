@@ -19,14 +19,6 @@
 #ifndef GRUB_MEMORY_CPU_HEADER
 #include <grub/efi/memory.h>
 
-static inline grub_uint64_t
-grub_efi_max_usable_address(void)
-{
-  grub_uint64_t addr;
-  asm volatile ("csrrd %0, 0x181" : "=r" (addr));
-  return addr |= 0xffffffffffUL;
-}
-
-#define GRUB_EFI_MAX_USABLE_ADDRESS grub_efi_max_usable_address()
+#define GRUB_EFI_MAX_USABLE_ADDRESS 0xffffffffffffULL
 
 #endif /* ! GRUB_MEMORY_CPU_HEADER */

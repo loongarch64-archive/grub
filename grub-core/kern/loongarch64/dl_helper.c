@@ -25,26 +25,14 @@
 #include <grub/i18n.h>
 #include <grub/cpu/reloc.h>
 
-struct grub_loongarch64_stack
-{
-  grub_uint64_t *data;
-  int count;
-  int top;
-};
-
 static void grub_loongarch64_stack_push (grub_loongarch64_stack_t stack, grub_uint64_t x);
 static grub_uint64_t grub_loongarch64_stack_pop (grub_loongarch64_stack_t stack);
 
-grub_loongarch64_stack_t
-grub_loongarch64_stack_new  (int n)
+void
+grub_loongarch64_stack_init (grub_loongarch64_stack_t stack)
 {
-  grub_loongarch64_stack_t stack;
-
-  stack = (grub_loongarch64_stack_t) grub_malloc (sizeof(struct grub_loongarch64_stack));
-  stack->data = (grub_uint64_t*) grub_malloc (n * sizeof (grub_uint64_t));
-  stack->count = n;
   stack->top = -1;
-  return stack;
+  stack->count = LOONGARCH64_STACK_MAX;
 }
 
 static void
@@ -61,13 +49,6 @@ grub_loongarch64_stack_pop (grub_loongarch64_stack_t stack)
   if (stack->top == -1)
     return -1;
   return stack->data[stack->top--];
-}
-
-void
-grub_loongarch64_stack_destroy (grub_loongarch64_stack_t stack)
-{
-  grub_free (stack->data);
-  grub_free (stack);
 }
 
 void

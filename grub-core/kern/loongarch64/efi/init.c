@@ -24,7 +24,7 @@
 #include <grub/efi/efi.h>
 #include <grub/loader.h>
 
-#define EFI_TIMER_PERIOD_MILLISECONDS(Milliseconds) ((grub_uint64_t)(Milliseconds * 10000))
+#define EFI_TIMER_PERIOD_MILLISECONDS(ms) ((grub_uint64_t)(ms * 10000))
 
 static grub_uint64_t tmr;
 static grub_efi_event_t tmr_evt;

@@ -29,11 +29,10 @@ FUNCTION(_start)
 	ldr	x2, efi_system_table_val
 	str	x1, [x2]
 	ldr	x2, grub_main_val
-	br	x2
+	b	x2
 grub_main_val:
 	.quad	EXT_C(grub_main)
 efi_system_table_val:
 	.quad	EXT_C(grub_efi_system_table)
 efi_image_handle_val:
 	.quad	EXT_C(grub_efi_image_handle)
-

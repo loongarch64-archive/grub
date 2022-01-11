@@ -28,8 +28,7 @@
 
 #define GRUB_LOONGSON3_BOOT_MEM_MAP_MAX 128
 
-#define GRUB_LINUX_LOONGARCH_MAGIC_SIGNATURE 0x4C6F6F6E67417263 /* 'LoongArc' */
-#define GRUB_LINUX_LOONGARCH_MAGIC_SIGNATURE2 0x68		/* 'h' */
+#define GRUB_LINUX_LOONGARCH_MAGIC_SIGNATURE  0x6E6F73676E6F6F4C /* 'Loongson' */
 #define linux_arch_kernel_header linux_loongarch64_kernel_header
 
 /* From linux/Documentation/loongarch/booting.txt
@@ -48,9 +47,9 @@ struct linux_loongarch64_kernel_header
   grub_uint64_t res0;		/* reserved */
   grub_uint64_t res1;		/* reserved */
   grub_uint64_t res2;		/* reserved */
-  grub_uint64_t magic;		/* Magic number, little endian, "LoongArc" */
-  grub_uint32_t magic1;		/* Magic number, little endian, "h" */
+  grub_uint64_t magic;		/* Magic number, little endian, "Loongson" */
   grub_uint64_t res3;		/* reserved */
+  grub_uint32_t res4;		/* reserved */
   grub_uint32_t hdr_offset;	/* Offset of PE/COFF header */
 };
 

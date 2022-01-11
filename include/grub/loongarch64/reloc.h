@@ -20,12 +20,18 @@
 #define GRUB_LOONGARCH64_RELOC_H 1
 #include <grub/types.h>
 
-struct grub_loongarch64_stack;
+#define LOONGARCH64_STACK_MAX 16
+
+struct grub_loongarch64_stack
+{
+  grub_uint64_t data[LOONGARCH64_STACK_MAX];
+  int count;
+  int top;
+};
+
 typedef struct grub_loongarch64_stack* grub_loongarch64_stack_t;
 
-grub_loongarch64_stack_t grub_loongarch64_stack_new (int count);
-void grub_loongarch64_stack_destroy (grub_loongarch64_stack_t stack);
-
+void grub_loongarch64_stack_init	     (grub_loongarch64_stack_t stack);
 void grub_loongarch64_sop_push		     (grub_loongarch64_stack_t stack,
 					      grub_int64_t offset);
 void grub_loongarch64_sop_sub		     (grub_loongarch64_stack_t stack);
