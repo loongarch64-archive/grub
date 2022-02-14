@@ -31,4 +31,4 @@ FUNCTION(_start)
 	la		$a2, EXT_C(grub_efi_system_table)
 	st.d		$a1, $a2, 0
 
-	bl		EXT_C(grub_main)
+	b		EXT_C(grub_main)
