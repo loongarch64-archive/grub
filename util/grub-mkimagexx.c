@@ -1134,6 +1134,8 @@ SUFFIX (relocate_addrs) (Elf_Ehdr *e, struct section_metadata *smd,
 		   case R_LARCH_64:
 		     *target = grub_host_to_target64 (grub_target_to_host64 (*target) + sym_addr);
 		     break;
+		   case R_LARCH_MARK_LA:
+		     break;
 		   case R_LARCH_SOP_PUSH_PCREL:
 		   case R_LARCH_SOP_PUSH_PLT_PCREL:
 		     grub_loongarch64_sop_push (&stack, sym_addr

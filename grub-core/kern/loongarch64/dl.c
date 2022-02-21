@@ -78,11 +78,13 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr,
 	{
 	case R_LARCH_64:
 	  *place = sym_addr;
-	break;
+	  break;
+	case R_LARCH_MARK_LA:
+	  break;
 	case R_LARCH_SOP_PUSH_PCREL:
 	case R_LARCH_SOP_PUSH_PLT_PCREL:
 	  grub_loongarch64_sop_push (&stack, sym_addr - (grub_uint64_t)place);
-	break;
+	  break;
 	GRUB_LOONGARCH64_RELOCATION (&stack, place, sym_addr)
 	default:
 	  {
