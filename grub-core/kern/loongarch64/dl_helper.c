@@ -1,7 +1,7 @@
 /* dl_helper.c - relocation helper functions for modules and grub-mkimage */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2021  Free Software Foundation, Inc.
+ *  Copyright (C) 2022 Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
