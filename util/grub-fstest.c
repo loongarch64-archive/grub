@@ -199,7 +199,7 @@ cp_hook (grub_off_t ofs, char *buf, int len, void *_ctx)
 static void
 cmd_cp (char *src, const char *dest)
 {
-  struct cp_hook_ctx ctx = 
+  struct cp_hook_ctx ctx =
     {
       .dest = dest
     };
@@ -349,7 +349,7 @@ static int
 crc_hook (grub_off_t ofs, char *buf, int len, void *crc_ctx)
 {
   (void) ofs;
-  
+
   GRUB_MD_CRC32->write(crc_ctx, buf, len);
   return 0;
 }
@@ -483,7 +483,7 @@ fstest (int n)
 	grub_device_close (dev);
       }
     }
-    
+
   for (i = 0; i < num_disks; i++)
     {
       char *argv[2];
@@ -512,7 +512,7 @@ static struct argp_option options[] = {
   {N_("crc FILE"), 0, 0     , OPTION_DOC, N_("Get crc32 checksum of FILE."), 1},
   {N_("blocklist FILE"), 0, 0, OPTION_DOC, N_("Display blocklist of FILE."), 1},
   {N_("xnu_uuid DEVICE"), 0, 0, OPTION_DOC, N_("Compute XNU UUID of the device."), 1},
-  
+
   {"root",      'r', N_("DEVICE_NAME"), 0, N_("Set root device."),                 2},
   {"skip",      's', N_("NUM"),           0, N_("Skip N bytes from output file."),   2},
   {"length",    'n', N_("NUM"),           0, N_("Handle N bytes in output file."),   2},
@@ -535,7 +535,7 @@ print_version (FILE *stream, struct argp_state *state)
 }
 void (*argp_program_version_hook) (FILE *, struct argp_state *) = print_version;
 
-static error_t 
+static error_t
 argp_parser (int key, char *arg, struct argp_state *state)
 {
   const char *p;
@@ -549,7 +549,7 @@ argp_parser (int key, char *arg, struct argp_state *state)
     case 'K':
       if (strcmp (arg, "prompt") == 0)
 	{
-	  char buf[1024];	  
+	  char buf[1024];
 	  grub_puts_ (N_("Enter ZFS password: "));
 	  if (grub_password_get (buf, 1023))
 	    {
@@ -722,7 +722,7 @@ argp_parser (int key, char *arg, struct argp_state *state)
 
 struct argp argp = {
   options, argp_parser, N_("IMAGE_PATH COMMANDS"),
-  N_("Debug tool for filesystem driver."), 
+  N_("Debug tool for filesystem driver."),
   NULL, NULL, NULL
 };
 
