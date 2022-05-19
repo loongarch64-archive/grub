@@ -19,7 +19,7 @@
 #ifndef GRUB_LOONGARCH64_LINUX_HEADER
 #define GRUB_LOONGARCH64_LINUX_HEADER 1
 
-#define GRUB_LINUX_LOONGARCH_MAGIC_SIGNATURE  0x6E6F73676E6F6F4C /* 'Loongson' */
+#define GRUB_LINUX_LOONGARCH_MAGIC_SIGNATURE  0x3436414C /* 'LA64' */
 
 struct linux_loongarch64_kernel_header
 {
@@ -29,9 +29,9 @@ struct linux_loongarch64_kernel_header
   grub_uint64_t res0;		/* reserved */
   grub_uint64_t res1;		/* reserved */
   grub_uint64_t res2;		/* reserved */
-  grub_uint64_t magic;		/* Magic number, little endian, "Loongson" */
   grub_uint64_t res3;		/* reserved */
-  grub_uint32_t res4;		/* reserved */
+  grub_uint64_t res4;		/* reserved */
+  grub_uint32_t magic;		/* Magic number, little endian, "LA64" */
   grub_uint32_t hdr_offset;	/* Offset of PE/COFF header */
 };
 
