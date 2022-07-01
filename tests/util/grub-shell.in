@@ -194,6 +194,15 @@ case "${grub_modinfo_target_cpu}-${grub_modinfo_platform}" in
 	disk="device virtio-blk-device,drive=hd1 -drive if=none,id=hd1,file="
 	serial_port=efi0
 	;;
+    loongarch64-efi)
+	qemu=qemu-system-loongarch64
+	boot=hd
+	console=console
+	trim=1
+	qemuopts="-machine virt -cpu la464 -smp 2 -nographic -bios /usr/share/qemu/edk2-loongarch64-code.fd $qemuopts"
+	disk="device virtio-blk-pci,drive=hd1 -drive if=none,id=hd1,file="
+	serial_port=
+	;;
     *)
 	boot=hd
 	qemu=qemu-system-i386
@@ -395,6 +404,8 @@ fi
 if [ x$boot = xhd ]; then
     if [ "${grub_modinfo_target_cpu}-${grub_modinfo_platform}" = arm64-efi ] || [ "${grub_modinfo_target_cpu}-${grub_modinfo_platform}" = arm-efi ]; then
 	device="device virtio-blk-device,drive=hd0 -drive if=none,id=hd0,file="
+    elif [ "${grub_modinfo_target_cpu}-${grub_modinfo_platform}" = loongarch64-efi ]; then
+	device="device virtio-blk-pci,drive=hd0 -drive if=none,id=hd0,file="
     elif [ "${grub_modinfo_target_cpu}-${grub_modinfo_platform}" = mips-arc ]; then
 	device="hdb "
     else
@@ -405,6 +416,8 @@ fi
 if [ x$boot = xcd ]; then
     if [ "${grub_modinfo_target_cpu}-${grub_modinfo_platform}" = arm64-efi ] || [ "${grub_modinfo_target_cpu}-${grub_modinfo_platform}" = arm-efi ]; then
 	device="device virtio-blk-device,drive=cd0 -drive if=none,id=cd0,media=cdrom,file="
+    elif [ "${grub_modinfo_target_cpu}-${grub_modinfo_platform}" = loongarch64-efi ]; then
+	device="device virtio-blk-pci,drive=cd0 -drive if=none,id=cd0,media=cdrom,file="
     elif [ "${grub_modinfo_target_cpu}-${grub_modinfo_platform}" = powerpc-ieee1275 ] && [ x$pseries != xy ] ; then
 	device="-drive if=ide,media=cdrom,file="
     else
@@ -509,6 +522,9 @@ elif [ x$boot = xemu ]; then
     test -n "$debug" || rm -rf "$rootdir"
     test -n "$debug" || rm -f "$roottar"
 else
+    if [ -n "$debug" ]; then
+      echo "${qemu}" ${qemuopts} ${serial_null} -serial file:/dev/stdout -${device}"${isofile}" ${bootdev} >> /tmp/grub-shell.run
+    fi
     timeout -s KILL $timeout "${qemu}" ${qemuopts} ${serial_null} -serial file:/dev/stdout -${device}"${isofile}" ${bootdev} | cat | tr -d "\r" | do_trim
 fi
 if [ x$boot = xcoreboot ]; then
