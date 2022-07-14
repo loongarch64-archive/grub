@@ -846,17 +846,18 @@ if ( test "x$target_cpu" = xi386 || test "x$target_cpu" = xx86_64 ); then
 fi
 
 if test "x$target_cpu" = xloongarch64; then
-  AC_CACHE_CHECK([whether -Wa,-mla-global-with-abs works], [grub_cv_cc_mla_global_with_abs], [
-    CFLAGS="$TARGET_CFLAGS -Wa,-mla-global-with-abs -Werror"
+  AC_CACHE_CHECK([whether _mno_explicit_relocs works], [grub_cv_cc_mno_explicit_relocs], [
+    CFLAGS="$TARGET_CFLAGS -mno-explicit-relocs -Werror"
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
-	[grub_cv_cc_mla_global_with_abs=yes],
-	[grub_cv_cc_mla_global_with_abs=no])
+	[grub_cv_cc_mno_explicit_relocs=yes],
+	[grub_cv_cc_mno_explicit_relocs=no])
   ])
-
-  if test "x$grub_cv_cc_mla_global_with_abs" = xyes; then
-    TARGET_CFLAGS="$TARGET_CFLAGS -Wa,-mla-global-with-abs"
-    TARGET_CCASFLAGS="$TARGET_CCASFLAGS -Wa,-mla-global-with-abs"
+  if test "x$grub_cv_cc_mno_explicit_relocs" = xyes; then
+    TARGET_CFLAGS="$TARGET_CFLAGS -mno-explicit-relocs -fno-plt"
+    TARGET_CCASFLAGS="$TARGET_CCASFLAGS -mno-explicit-relocs -fno-plt"
   fi
+  TARGET_CFLAGS="$TARGET_CFLAGS -Wa,-mla-global-with-abs"
+  TARGET_CCASFLAGS="$TARGET_CCASFLAGS -Wa,-mla-global-with-abs"
 fi
 
 # GRUB doesn't use float or doubles at all. Yet some toolchains may decide
