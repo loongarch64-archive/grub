@@ -19,11 +19,24 @@
 #ifndef GRUB_LOONGARCH64_LINUX_HEADER
 #define GRUB_LOONGARCH64_LINUX_HEADER 1
 
+#include <grub/types.h>
+
+#include <grub/efi/pe32.h>
+
 struct linux_loongarch64_kernel_header
 {
-  /*
-   * TODO
-   */
+  grub_uint32_t code0;		/* Executable code */
+  grub_uint32_t code1;		/* Executable code */
+  grub_uint64_t text_offset;	/* Image load offset */
+  grub_uint64_t res0;		/* reserved */
+  grub_uint64_t res1;		/* reserved */
+  grub_uint64_t res2;		/* reserved */
+  grub_uint64_t res3;		/* reserved */
+  grub_uint64_t res4;		/* reserved */
+  grub_uint32_t res5; 		/* reverved */
+  grub_uint32_t hdr_offset;	/* Offset of PE/COFF header */
+
+  struct grub_pe_image_header pe_image_header;
 };
 
 #define linux_arch_kernel_header linux_loongarch64_kernel_header
