@@ -874,6 +874,18 @@ if test "x$target_cpu" = xloongarch64; then
     TARGET_CFLAGS="$TARGET_CFLAGS -mno-explicit-relocs -fno-plt"
     TARGET_CCASFLAGS="$TARGET_CCASFLAGS -mno-explicit-relocs -fno-plt"
   fi
+
+  AC_CACHE_CHECK([whether _mno_relax works], [grub_cv_cc_mno_relax], [
+    CFLAGS="$TARGET_CFLAGS -mno-relax -Werror"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],
+	[grub_cv_cc_mno_relax=yes],
+	[grub_cv_cc_mno_relax=no])
+  ])
+  if test "x$grub_cv_cc_mno_relax" = xyes; then
+    TARGET_CFLAGS="$TARGET_CFLAGS -mno-relax"
+    TARGET_CCASFLAGS="$TARGET_CCASFLAGS -mno-relax"
+  fi
+
   TARGET_CFLAGS="$TARGET_CFLAGS -Wa,-mla-global-with-abs"
   TARGET_CCASFLAGS="$TARGET_CCASFLAGS -Wa,-mla-global-with-abs"
 fi
